@@ -83,6 +83,14 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Stats Dashboard */
+        .stats-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;}
+        .stat-card { flex: 1; min-width: 150px; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; justify-content: center;}
+        .stat-card.highlight { border-color: var(--primary); background: rgba(255, 75, 75, 0.05); }
+        .stat-value { font-size: 2em; font-weight: bold; color: white; line-height: 1; margin-bottom: 5px;}
+        .stat-card.highlight .stat-value { color: var(--primary); }
+        .stat-label { font-size: 0.85em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;}
+
         .card { background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;}
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; padding-left: 20px;}
@@ -123,6 +131,10 @@
             .sidebar, .tabs, .header-row button, #mobile-menu-btn, .toast-container, #startupModal, #qrModal, .resizer, #border-flash { display: none !important; }
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; display: block !important; }
             .header-row { border: none; }
+            .stats-container { margin-bottom: 20px; }
+            .stat-card { border: 1px solid #ccc !important; box-shadow: none !important; background: #fff !important; }
+            .stat-value { color: #000 !important; }
+            .stat-label { color: #555 !important; }
             #calendar { background: #ffffff !important; box-shadow: none !important; padding: 0 !important;}
             .fc { --fc-page-bg-color: #ffffff; --fc-neutral-bg-color: #ffffff; --fc-border-color: #000000; --fc-button-text-color: #000; --fc-button-bg-color: #eee; --fc-button-border-color: #ccc; }
             .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: #000000 !important; }
@@ -168,8 +180,8 @@
         <button id="close-sidebar-btn" onclick="toggleSidebar()">×</button>
         <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">🗓️ Settings</h3>
         
-        <label>School Start Date</label><input type="date" id="schoolStart">
-        <label>School End Date</label><input type="date" id="schoolEnd">
+        <label>School Start Date</label><input type="date" id="schoolStart" onchange="updateCounters()">
+        <label>School End Date</label><input type="date" id="schoolEnd" onchange="updateCounters()">
         
         <label>Country</label>
         <input type="text" id="country" list="countryList" placeholder="Search or type country..." autocomplete="off">
@@ -222,6 +234,21 @@
         </div>
 
         <div id="tab-cal" class="tab-content active">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotalDays">0</div>
+                    <div class="stat-label">Days Left</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statSchoolDays">0</div>
+                    <div class="stat-label">School Days Left</div>
+                </div>
+                <div class="stat-card highlight">
+                    <div class="stat-value" id="statAttendingDays">0</div>
+                    <div class="stat-label">Attending if Followed</div>
+                </div>
+            </div>
+
             <div id="calendar"></div>
         </div>
 
@@ -299,6 +326,67 @@
         }
         function closeQRModal(e) { if(e.target.id === 'qrModal') document.getElementById('qrModal').classList.remove('show'); }
 
+        // --- STATS COUNTERS ---
+        function updateCounters() {
+            const startStr = document.getElementById('schoolStart').value;
+            const endStr = document.getElementById('schoolEnd').value;
+            if(!startStr || !endStr) return;
+
+            // Start calculation from today, OR the school start date (whichever is later)
+            let todayDt = new Date(); todayDt.setHours(0,0,0,0);
+            let calcStartDt = new Date(startStr); calcStartDt.setHours(0,0,0,0);
+            if (todayDt > calcStartDt) calcStartDt = todayDt;
+            
+            let endDt = new Date(endStr); endDt.setHours(0,0,0,0);
+
+            let totalDaysLeft = 0;
+            let schoolDaysLeft = 0;
+
+            if (calcStartDt <= endDt) {
+                let holidaySet = new Set();
+                publicHolidays.forEach(h => holidaySet.add(h.date));
+                state.customHolidays.forEach(h => {
+                    let curr = new Date(h.start); let eDt = new Date(h.end);
+                    while(curr <= eDt) { holidaySet.add(curr.toISOString().split('T')[0]); curr.setDate(curr.getDate()+1); }
+                });
+
+                let curr = new Date(calcStartDt);
+                while(curr <= endDt) {
+                    totalDaysLeft++;
+                    let iso = curr.toISOString().split('T')[0];
+                    let dow = curr.getDay();
+                    if(dow !== 0 && dow !== 6 && !holidaySet.has(iso)) {
+                        schoolDaysLeft++;
+                    }
+                    curr.setDate(curr.getDate() + 1);
+                }
+            }
+
+            let plannedSickDaysLeft = 0;
+            sickBlocks.forEach(sb => {
+                let bStart = new Date(sb.start); bStart.setHours(0,0,0,0);
+                let bEnd = new Date(sb.end); bEnd.setHours(0,0,0,0);
+                let bCurr = new Date(bStart);
+                while(bCurr <= bEnd) {
+                    if (bCurr >= calcStartDt && bCurr <= endDt) {
+                        let iso = bCurr.toISOString().split('T')[0];
+                        let dow = bCurr.getDay();
+                        let isHol = publicHolidays.some(h => h.date === iso) || state.customHolidays.some(h => { let ct = bCurr.getTime(); return ct >= new Date(h.start).getTime() && ct <= new Date(h.end).getTime(); });
+                        if(dow !== 0 && dow !== 6 && !isHol) {
+                            plannedSickDaysLeft++;
+                        }
+                    }
+                    bCurr.setDate(bCurr.getDate() + 1);
+                }
+            });
+
+            let attendingDaysLeft = Math.max(0, schoolDaysLeft - plannedSickDaysLeft);
+
+            document.getElementById('statTotalDays').innerText = totalDaysLeft;
+            document.getElementById('statSchoolDays').innerText = schoolDaysLeft;
+            document.getElementById('statAttendingDays').innerText = attendingDaysLeft;
+        }
+
         // --- GENDER UI ---
         let currentGender = "Male";
         function setGender(gender) {
@@ -369,7 +457,7 @@
             
             let codeObj = globalCountries.find(c => c.n.toLowerCase() === countryName.toLowerCase());
             if(codeObj) { currentCountryCode = codeObj.c; fetchHolidays(); }
-            else { currentCountryCode = null; publicHolidays = []; calendar.refetchEvents(); }
+            else { currentCountryCode = null; publicHolidays = []; calendar.refetchEvents(); updateCounters();}
         });
 
         document.getElementById('state').addEventListener('change', fetchHolidays);
@@ -383,14 +471,14 @@
                     const allHols = await hRes.json();
                     const stateTyped = document.getElementById('state').value.toLowerCase();
                     
-                    // Filter logic: If state is typed, include global holidays (counties is null) OR holidays that match the state.
                     publicHolidays = allHols.filter(h => {
-                        if(!stateTyped) return true; // No state typed, show all for country
-                        if(!h.counties) return true; // Global country holiday
+                        if(!stateTyped) return true; 
+                        if(!h.counties) return true; 
                         return h.counties.some(c => c.toLowerCase().includes(stateTyped) || stateTyped.includes(c.toLowerCase().split('-')[1]));
                     }).map(h => ({ name: h.name, date: h.date }));
                     
                     calendar.refetchEvents(); 
+                    updateCounters();
                 }
             } catch(e) {}
         }
@@ -423,7 +511,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const t = new Date(); document.getElementById('schoolStart').valueAsDate = t;
             const n = new Date(); n.setFullYear(t.getFullYear() + 1); document.getElementById('schoolEnd').valueAsDate = n;
-            initCalendar(); renderIllnessConfig();
+            initCalendar(); renderIllnessConfig(); updateCounters();
         });
 
         function initCalendar() {
@@ -484,7 +572,7 @@
             const n = document.getElementById('holName').value; const s = document.getElementById('holStart').value; const e = document.getElementById('holEnd').value;
             if(!n || !s || !e) return showToast("Fill all holiday fields.", "error"); 
             state.customHolidays.push({name:n, start:s, end:e});
-            document.getElementById('holName').value = ''; renderHolidaysTable(); calendar.refetchEvents();
+            document.getElementById('holName').value = ''; renderHolidaysTable(); calendar.refetchEvents(); updateCounters();
         }
         function renderHolidaysTable() {
             const b = document.querySelector('#holiday-table tbody'); b.innerHTML = '';
@@ -502,7 +590,6 @@
             const gap = parseInt(document.getElementById('minGap').value);
             if(window.innerWidth <= 768) toggleSidebar();
 
-            // 1. Pre-calculate all Holidays into a fast Set
             let holidaySet = new Set();
             publicHolidays.forEach(h => holidaySet.add(h.date));
             state.customHolidays.forEach(h => {
@@ -510,7 +597,6 @@
                 while(curr <= eDt) { holidaySet.add(curr.toISOString().split('T')[0]); curr.setDate(curr.getDate()+1); }
             });
 
-            // 2. Build the exact Pool of Valid Strings instantly
             let validDays = [];
             let curr = new Date(startStr);
             let endDt = new Date(endStr);
@@ -526,19 +612,18 @@
 
             if(validDays.length < target) {
                 showToast(`Error: Only ${validDays.length} valid school days available, but target is ${target}.`, "error");
+                updateCounters();
                 return;
             }
 
             let pool = validDays.slice();
             let missed = 0; 
             let attempts = 0; 
-            const MAX_ATTEMPTS = 300; // Hard cap to prevent infinite browser freeze
+            const MAX_ATTEMPTS = 300; 
 
-            // 3. Fast Scheduling Loop
             while(missed < target && pool.length > 0 && attempts < MAX_ATTEMPTS) {
                 attempts++; 
                 
-                // Pick Random Start Date String
                 let sStr = pool[Math.floor(Math.random() * pool.length)]; 
                 let sDt = new Date(sStr);
                 
@@ -546,7 +631,6 @@
                 let bMissed = 0; 
                 let eStr = sStr;
                 
-                // Calculate Forward Block
                 for(let i=0; i<dur; i++) {
                     let tDt = new Date(sDt);
                     tDt.setDate(tDt.getDate() + i);
@@ -557,7 +641,6 @@
                 
                 if(bMissed === 0 || missed + bMissed > target) continue;
 
-                // Check Gaps
                 let gapFail = sickBlocks.some(b => { 
                     let d1 = Math.abs(new Date(sStr) - new Date(b.end)) / 864e5; 
                     let d2 = Math.abs(new Date(eStr) - new Date(b.start)) / 864e5; 
@@ -565,7 +648,6 @@
                 });
                 if(gapFail) continue;
 
-                // Select valid Illness
                 let validIllnesses = Object.keys(state.activeSymptoms).filter(k => {
                     let s = state.activeSymptoms[k]; if(s.gender && s.gender !== currentGender) return false;
                     if(s.min > dur || s.max < dur) return false;
@@ -579,11 +661,9 @@
                 let cD = state.activeSymptoms[cN];
                 let rS = cN + (cD.modifiers && cD.modifiers.length && Math.random()>0.3 ? " " + cD.modifiers[Math.floor(Math.random()*cD.modifiers.length)] : "");
                 
-                // Push Block
                 sickBlocks.push({start:sStr, end:eStr, reason:rS, missed:bMissed, is_period:cD.is_period});
                 missed += bMissed;
                 
-                // Remove used days from remaining pool
                 for(let i=0; i<dur; i++) { 
                     let tDt = new Date(sDt); tDt.setDate(tDt.getDate()+i); 
                     pool = pool.filter(p => p !== tDt.toISOString().split('T')[0]); 
@@ -597,6 +677,7 @@
                 switchTab('cal');
             }
             calendar.refetchEvents();
+            updateCounters();
         }
 
         function exportSettings() {
@@ -605,7 +686,7 @@
             const n = document.createElement('a'); n.setAttribute("href", s); n.setAttribute("download", "settings.json"); n.click();
             showToast("Settings Exported!");
         }
-        function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); showToast("Schedule Cleared.");}
+        function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); updateCounters(); showToast("Schedule Cleared.");}
         
         document.getElementById('importFile').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -615,7 +696,7 @@
                     const data = JSON.parse(e.target.result);
                     if(data.target) { document.getElementById('targetDays').value = data.target; document.getElementById('targetValText').innerText = data.target; }
                     if (data.state) { state = data.state; }
-                    renderIllnessConfig(); renderHolidaysTable(); calendar.refetchEvents();
+                    renderIllnessConfig(); renderHolidaysTable(); calendar.refetchEvents(); updateCounters();
                     showToast("Settings imported successfully!");
                 } catch (err) { showToast("Invalid JSON file.", "error"); }
             };
