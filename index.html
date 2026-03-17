@@ -40,25 +40,35 @@
         }
         #close-sidebar-btn { display: none; }
         
-        .resizer {
-            width: 6px; background: var(--border); cursor: col-resize; z-index: 10; flex-shrink: 0;
-            transition: background 0.2s;
-        }
+        .resizer { width: 6px; background: var(--border); cursor: col-resize; z-index: 10; flex-shrink: 0; transition: background 0.2s; }
         .resizer:hover, .resizer.active { background: var(--primary); }
-
         .main-content { flex-grow: 1; padding: 60px 20px 20px; overflow-y: auto; height: 100%; position: relative; min-width: 0; }
         
         label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9em; color: #bbb;}
-        input, select { 
-            width: 100%; padding: 8px; margin-top: 5px; background: var(--input-bg); 
-            color: var(--text-color); border: 1px solid var(--border); border-radius: 4px; 
-        }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border); border-radius: 4px; }
         input[type="range"] { accent-color: var(--primary); }
         input[type="checkbox"] { width: auto; margin-right: 8px; transform: scale(1.2); accent-color: var(--primary);}
         button { background-color: var(--primary); color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px; transition: 0.2s;}
         button:hover { opacity: 0.9; }
         .btn-secondary { background-color: #444; }
         
+        /* Dual Slider CSS */
+        .dual-slider-container { position: relative; width: 100%; height: 30px; margin-top: 10px; }
+        .dual-slider-track { position: absolute; width: 100%; height: 4px; background: var(--input-bg); top: 13px; border-radius: 2px; z-index: 1; }
+        .dual-slider-fill { position: absolute; height: 100%; background: var(--primary); border-radius: 2px; z-index: 2; }
+        .dual-slider-container input[type="range"] {
+            position: absolute; width: 100%; top: 0; left: 0; margin: 0; background: none; 
+            pointer-events: none; z-index: 3; -webkit-appearance: none; height: 30px;
+        }
+        .dual-slider-container input[type="range"]::-webkit-slider-thumb {
+            pointer-events: auto; -webkit-appearance: none; width: 16px; height: 16px; 
+            border-radius: 50%; background: white; border: 2px solid var(--primary); cursor: pointer;
+        }
+        .dual-slider-container input[type="range"]::-moz-range-thumb {
+            pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; 
+            background: white; border: 2px solid var(--primary); cursor: pointer;
+        }
+
         .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto;}
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; white-space: nowrap;}
         .tab.active { border-bottom: 2px solid var(--primary); font-weight: bold; color: var(--text-color); }
@@ -68,19 +78,15 @@
         .card { background: var(--card-bg); padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 15px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; padding-left: 20px;}
-        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
         th { background: var(--input-bg); }
 
         #calendar { background: var(--sidebar-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .fc { 
-            --fc-page-bg-color: var(--sidebar-bg); 
-            --fc-neutral-bg-color: var(--bg-color); 
-            --fc-border-color: var(--border);
-            --fc-button-text-color: var(--text-color);
-            --fc-button-bg-color: var(--input-bg);
-            --fc-button-border-color: var(--border);
+            --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); 
+            --fc-border-color: var(--border); --fc-button-text-color: var(--text-color);
+            --fc-button-bg-color: var(--input-bg); --fc-button-border-color: var(--border);
         }
         .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--text-color); text-decoration: none; }
 
@@ -124,8 +130,16 @@
 
         <label>Target Days to Miss: <span id="targetValText" style="color:var(--text-color)">20</span></label>
         <input type="range" id="targetDays" min="1" max="80" value="20" oninput="document.getElementById('targetValText').innerText = this.value">
-        <label>Max Sick Block: <span id="maxBlockText" style="color:var(--text-color)">7</span> days</label>
-        <input type="range" id="maxBlock" min="1" max="14" value="7" oninput="document.getElementById('maxBlockText').innerText = this.value">
+        
+        <label>Sick Block Length: <span id="blockRangeText" style="color:var(--text-color)">1 - 7</span> days</label>
+        <div class="dual-slider-container">
+            <div class="dual-slider-track">
+                <div class="dual-slider-fill" id="blockSliderFill"></div>
+            </div>
+            <input type="range" id="minBlock" min="1" max="14" value="1" oninput="updateDualSlider()">
+            <input type="range" id="maxBlock" min="1" max="14" value="7" oninput="updateDualSlider()">
+        </div>
+
         <label>Min Gap (Days): <span id="minGapText" style="color:var(--text-color)">3</span></label>
         <input type="range" id="minGap" min="1" max="15" value="3" oninput="document.getElementById('minGapText').innerText = this.value">
 
@@ -183,6 +197,35 @@
     </div>
 
     <script>
+        // --- DUAL SLIDER LOGIC ---
+        function updateDualSlider() {
+            let minVal = parseInt(document.getElementById("minBlock").value);
+            let maxVal = parseInt(document.getElementById("maxBlock").value);
+            
+            // Prevent knots from crossing over each other
+            if (minVal > maxVal) {
+                let tmp = minVal;
+                minVal = maxVal;
+                maxVal = tmp;
+                document.getElementById("minBlock").value = minVal;
+                document.getElementById("maxBlock").value = maxVal;
+            }
+            
+            document.getElementById("blockRangeText").innerText = `${minVal} - ${maxVal}`;
+            
+            // Update the colored track fill
+            const maxLimit = 14; 
+            const minLimit = 1;
+            let percent1 = ((minVal - minLimit) / (maxLimit - minLimit)) * 100;
+            let percent2 = ((maxVal - minLimit) / (maxLimit - minLimit)) * 100;
+            
+            const fill = document.getElementById("blockSliderFill");
+            fill.style.left = percent1 + "%";
+            fill.style.width = (percent2 - percent1) + "%";
+        }
+        // Initialize dual slider UI
+        updateDualSlider();
+
         // --- DATA ---
         const DEFAULT_SYMPTOMS = {
             "Migraine": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["with light sensitivity", "with severe nausea"] },
@@ -291,7 +334,12 @@
 
         function generateStrategy() {
             sickBlocks = []; const start = document.getElementById('schoolStart').value; const end = document.getElementById('schoolEnd').value;
-            const target = parseInt(document.getElementById('targetDays').value); const maxB = parseInt(document.getElementById('maxBlock').value);
+            const target = parseInt(document.getElementById('targetDays').value); 
+            
+            // GRAB MIN AND MAX FROM DUAL SLIDER
+            const minB = parseInt(document.getElementById('minBlock').value);
+            const maxB = parseInt(document.getElementById('maxBlock').value);
+            
             const gap = parseInt(document.getElementById('minGap').value); const gender = document.getElementById('gender').value;
             if(window.innerWidth <= 768) toggleSidebar();
 
@@ -304,7 +352,11 @@
 
             let missed = 0; let its = 0;
             while(missed < target && pool.length > 0 && its < 1000) {
-                its++; let sD = pool[Math.floor(Math.random()*pool.length)]; let dur = Math.floor(Math.random()*maxB)+1;
+                its++; let sD = pool[Math.floor(Math.random()*pool.length)]; 
+                
+                // RANDOM DURATION BETWEEN MIN AND MAX KNOTS
+                let dur = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
+                
                 let bMissed = 0; let eD = sD;
                 for(let i=0; i<dur; i++) {
                     let tD = new Date(new Date(sD).setDate(new Date(sD).getDate()+i)).toISOString().split('T')[0];
