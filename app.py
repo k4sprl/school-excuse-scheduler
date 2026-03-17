@@ -68,7 +68,7 @@ def fetch_nager_holidays():
                     if st.session_state.school_start <= h_date <= st.session_state.school_end:
                         holidays_list.append({"Name": h['name'], "Start": h_date, "End": h_date, "Type": "Public"})
     except:
-        pass # Silently fail if API is unreachable
+        pass # Silently fail if API is unreachable.
     st.session_state.public_holidays = pd.DataFrame(holidays_list) if holidays_list else pd.DataFrame(columns=["Name", "Start", "End", "Type"])
 
 # --- 4. INTERACTIVE DIALOG MODAL ---
