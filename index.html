@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>School Excuse Scheduler</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Scheduler">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#121212">
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"School Excuse Scheduler","short_name":"Scheduler","display":"standalone","background_color":"#121212","theme_color":"#ff4b4b","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmNGI0YiIvPjx0ZXh0IHg9IjUwIiB5PSI2NCIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiI+4pyPPC90ZXh0Pjwvc3ZnPg==","sizes":"512x512","type":"image/svg+xml"}]}'>
+
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -16,7 +24,7 @@
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { margin: 0; display: flex; background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; position: relative; }
         
-        /* Modals */
+        /* Modals & Overlays */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s ease; }
         .modal-overlay.show { display: flex; opacity: 1; }
         .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; transform: translateY(-20px); transition: transform 0.3s ease;}
@@ -26,12 +34,25 @@
         .close-modal-x { position: absolute; top: 15px; right: 20px; font-size: 1.5em; cursor: pointer; color: #888; transition: 0.2s; }
         .close-modal-x:hover { color: white; }
 
-        /* Toasts */
+        /* Advanced Toast System */
         .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 90vw; pointer-events: none;}
-        .toast { background: var(--card-bg); border-left: 4px solid var(--primary); color: white; padding: 15px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateX(50px); transition: all 0.3s ease; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9em; pointer-events: auto;}
+        .toast { background: var(--card-bg); border-left: 4px solid var(--primary); color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateX(50px); transition: all 0.3s ease; display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;}
         .toast.show { opacity: 1; transform: translateX(0); }
+        .toast-content { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; gap: 10px; font-size: 0.9em; }
+        .toast-progress-bar { height: 4px; background: var(--primary); width: 100%; transform-origin: left; }
         .toast.female-toast { border-left-color: var(--anim-female); }
+        .toast.female-toast .toast-progress-bar { background: var(--anim-female); }
         .toast.male-toast { border-left-color: var(--anim-male); }
+        .toast.male-toast .toast-progress-bar { background: var(--anim-male); }
+        .toast.success-toast { border-left-color: #2ecc71; }
+        .toast.success-toast .toast-progress-bar { background: #2ecc71; }
+
+        /* Loading Overlay for Generation */
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: none; flex-direction: column; align-items: center; justify-content: center; color: white;}
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;}
+        .gen-progress-container { width: 80%; max-width: 400px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; margin-top: 15px;}
+        .gen-progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s;}
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         
         #mobile-menu-btn { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; background: var(--sidebar-bg); color: var(--text-color); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 1.2em; transition: 0.2s; }
         
@@ -52,21 +73,18 @@
         .btn-secondary { background-color: #444; }
         .btn-secondary:hover { background-color: #555; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         
-        /* QR Button */
         .qr-btn { background: transparent; border: 1px solid var(--border); color: var(--text-color); width: auto; padding: 8px 12px; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 20px; white-space: nowrap;}
         .qr-btn:hover { background: var(--input-bg); border-color: #666; box-shadow: none; transform: none;}
 
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; gap: 15px;}
         .header-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
         
-        /* Gender UI */
         .gender-container { display: flex; gap: 20px; font-weight: bold; font-size: 1.2em; margin-top: 8px; }
         .gender-btn { cursor: pointer; transition: 0.2s; color: #555; padding: 5px 10px; border-radius: 6px;}
         .gender-btn:hover { background: var(--input-bg); }
         .gender-btn.active-male { color: var(--anim-male); text-shadow: 0 0 10px rgba(30,144,255,0.4); background: rgba(30,144,255,0.1); }
         .gender-btn.active-female { color: var(--anim-female); text-shadow: 0 0 10px rgba(255,105,180,0.4); background: rgba(255,105,180,0.1); }
 
-        /* Dual Slider CSS */
         .dual-slider-container { position: relative; width: 100%; height: 30px; margin-top: 10px; }
         .dual-slider-track { position: absolute; left: 9px; right: 9px; height: 6px; background: var(--input-bg); top: 12px; border-radius: 3px; z-index: 1; }
         .dual-slider-fill { position: absolute; height: 100%; background: var(--primary); border-radius: 3px; z-index: 2; transition: left 0.1s, width 0.1s; }
@@ -84,11 +102,10 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Stats Dashboard */
         .stats-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;}
-        .stat-card { flex: 1; min-width: 120px; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; justify-content: center;}
+        .stat-card { flex: 1; min-width: 120px; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; justify-content: center; transition: 0.3s;}
         .stat-card.highlight { border-color: var(--primary); background: rgba(255, 75, 75, 0.05); }
-        .stat-value { font-size: 2em; font-weight: bold; color: white; line-height: 1; margin-bottom: 5px;}
+        .stat-value { font-size: 2em; font-weight: bold; color: white; line-height: 1; margin-bottom: 5px; transition: color 0.3s;}
         .stat-card.highlight .stat-value { color: var(--primary); }
         .stat-label { font-size: 0.85em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;}
 
@@ -99,7 +116,6 @@
         th, td { border: 1px solid var(--border); padding: 10px; text-align: left; }
         th { background: var(--input-bg); font-weight: 600; text-transform: uppercase; font-size: 0.85em;}
 
-        /* Calendar Tweaks */
         #calendar { background: var(--sidebar-bg); padding: 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); overflow-x: auto;}
         .fc { --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); --fc-border-color: var(--border); --fc-button-text-color: var(--text-color); --fc-button-bg-color: var(--input-bg); --fc-button-border-color: var(--border); --fc-button-hover-bg-color: #444; --fc-button-active-bg-color: var(--primary); --fc-button-active-border-color: var(--primary);}
         .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--text-color); text-decoration: none; font-weight: 600;}
@@ -111,7 +127,6 @@
         @keyframes flashPink { 0% { box-shadow: inset 0 0 80px 20px var(--anim-female); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
         @keyframes flashBlue { 0% { box-shadow: inset 0 0 80px 20px var(--anim-male); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
             #mobile-menu-btn { display: block; }
             .resizer { display: none; }
@@ -127,10 +142,9 @@
             .toast { width: 100%; }
         }
 
-        /* 🖨️ Print Styles */
         @media print {
             body { background: #ffffff !important; color: #000000 !important; }
-            .sidebar, .tabs, .header-buttons, #mobile-menu-btn, .toast-container, #startupModal, #qrModal, .resizer, #border-flash { display: none !important; }
+            .sidebar, .tabs, .header-buttons, #mobile-menu-btn, .toast-container, #startupModal, #qrModal, .resizer, #border-flash, #loadingOverlay { display: none !important; }
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; display: block !important; }
             .header-row { border: none; padding: 0; margin: 0;}
             .stats-container { margin-bottom: 20px; }
@@ -173,6 +187,15 @@
         </div>
     </div>
 
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <h3 style="margin:0;">Generating Strategy...</h3>
+        <div class="gen-progress-container">
+            <div class="gen-progress-fill" id="genProgressFill"></div>
+        </div>
+        <p id="genProgressText" style="color:#aaa; font-size:0.9em; margin-top:10px;">Mapping dates...</p>
+    </div>
+
     <div id="border-flash"></div>
     <div class="toast-container" id="toastContainer"></div>
     
@@ -202,7 +225,7 @@
         <hr style="margin: 25px 0; border: 0; border-top: 1px solid var(--border);">
 
         <label>Target Days to Miss: <span id="targetValText" style="color:white; font-size: 1.1em; text-transform: none;">20</span></label>
-        <input type="range" id="targetDays" min="1" max="80" value="20" oninput="document.getElementById('targetValText').innerText = this.value">
+        <input type="range" id="targetDays" min="1" max="80" value="20" oninput="document.getElementById('targetValText').innerText = this.value; updateCounters();">
         
         <label>Sick Block Length: <span id="blockRangeText" style="color:white; font-size: 1.1em; text-transform: none;">1 - 7</span> days</label>
         <div class="dual-slider-container">
@@ -214,7 +237,7 @@
         <label>Min Gap Between Blocks: <span id="minGapText" style="color:white; font-size: 1.1em; text-transform: none;">3</span> days</label>
         <input type="range" id="minGap" min="1" max="15" value="3" oninput="document.getElementById('minGapText').innerText = this.value">
 
-        <button onclick="generateStrategy()" style="margin-top: 30px;">Generate Strategy</button>
+        <button onclick="triggerGeneration()" style="margin-top: 30px;">Generate Strategy</button>
         <button class="btn-secondary" onclick="clearSchedule()">Clear Schedule</button>
 
         <a href="https://github.com/k4sprl/school-excuse-scheduler" target="_blank" style="margin-top: auto; padding-top: 20px; text-align: center; color: #888; text-decoration: none; font-size: 0.9em;">View on GitHub</a>
@@ -278,8 +301,8 @@
                     <p style="font-size: 0.85em; color: #aaa;">Add periods where school is closed.</p>
                     <input type="text" id="holName" placeholder="e.g., Autumn Break">
                     <div class="grid-2">
-                        <div><label>Start</label><input type="date" id="holStart"></div>
-                        <div><label>End</label><input type="date" id="holEnd"></div>
+                        <div><label>Start</label><input type="date" id="holStart" onchange="updateCounters()"></div>
+                        <div><label>End</label><input type="date" id="holEnd" onchange="updateCounters()"></div>
                     </div>
                     <button onclick="addCustomHoliday()">Add School Holiday</button>
                     <table id="holiday-table"><thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead><tbody></tbody></table>
@@ -296,36 +319,61 @@
     </div>
 
     <script>
-        // --- SAFE DATE PARSERS (Prevent Timezone shift bugs) ---
-        function parseDateString(str) {
-            let parts = str.split('-');
-            return new Date(parts[0], parts[1] - 1, parts[2]);
-        }
-        function formatDateString(dt) {
-            return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
-        }
+        // --- SAFE DATE PARSERS ---
+        function parseDateString(str) { let parts = str.split('-'); return new Date(parts[0], parts[1] - 1, parts[2]); }
+        function formatDateString(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
 
-        // --- MODALS & TOASTS ---
+        // --- ADVANCED TOAST SYSTEM ---
         function showToast(message, type = "info") {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            toast.className = `toast ${type === 'female' ? 'female-toast' : (type === 'male' ? 'male-toast' : '')}`;
-            toast.innerHTML = `<span>${message}</span> <span style="cursor:pointer; color:#aaa; font-size: 1.5em; padding-left: 10px;" onclick="this.parentElement.remove()">×</span>`;
+            toast.className = `toast ${type}-toast`;
+            
+            const content = document.createElement('div');
+            content.className = 'toast-content';
+            content.innerHTML = `<span>${message}</span> <span style="cursor:pointer; color:#aaa; font-size: 1.5em; padding-left: 10px;" onclick="this.parentElement.parentElement.remove()">×</span>`;
+            
+            const bar = document.createElement('div');
+            bar.className = 'toast-progress-bar';
+            
+            toast.appendChild(content); toast.appendChild(bar);
             container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 5000);
+            
+            let timeLeft = 20000; let lastTime = performance.now(); let isHovered = false; let reqId;
+
+            function updateProgress(time) {
+                if (!isHovered) { timeLeft -= (time - lastTime); } 
+                else { timeLeft = 20000; } // Reset on hover
+                lastTime = time;
+                
+                bar.style.width = Math.max(0, (timeLeft / 20000) * 100) + "%";
+                if (timeLeft <= 0) {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                } else {
+                    reqId = requestAnimationFrame(updateProgress);
+                }
+            }
+            
+            toast.addEventListener('mouseenter', () => { isHovered = true; });
+            toast.addEventListener('mouseleave', () => { isHovered = false; lastTime = performance.now(); });
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+                lastTime = performance.now();
+                reqId = requestAnimationFrame(updateProgress);
+            }, 10);
         }
 
-        window.onload = () => {
+        window.onload = async () => {
             if (localStorage.getItem('hideStartupModal') !== 'true') {
                 document.getElementById('startupModal').classList.add('show');
             }
+            await autoDetectLocation();
         };
 
         function closeStartupModal() {
-            if (document.getElementById('dontShowAgain').checked) {
-                localStorage.setItem('hideStartupModal', 'true');
-            }
+            if (document.getElementById('dontShowAgain').checked) { localStorage.setItem('hideStartupModal', 'true'); }
             document.getElementById('startupModal').classList.remove('show');
         }
 
@@ -334,6 +382,7 @@
             document.getElementById('qrcode').innerHTML = ""; 
             new QRCode(document.getElementById("qrcode"), { text: url, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
             document.getElementById('qrModal').classList.add('show');
+            showToast("QR Code generated.", "info");
         }
         function closeQRModal(e) { if(e.target.id === 'qrModal') document.getElementById('qrModal').classList.remove('show'); }
 
@@ -349,8 +398,7 @@
             
             let endDt = parseDateString(endStr); endDt.setHours(0,0,0,0);
 
-            let totalDaysLeft = 0;
-            let schoolDaysLeft = 0;
+            let totalDaysLeft = 0; let schoolDaysLeft = 0;
 
             if (calcStartDt <= endDt) {
                 let holidaySet = new Set();
@@ -365,9 +413,7 @@
                     totalDaysLeft++;
                     let iso = formatDateString(curr);
                     let dow = curr.getDay();
-                    if(dow !== 0 && dow !== 6 && !holidaySet.has(iso)) {
-                        schoolDaysLeft++;
-                    }
+                    if(dow !== 0 && dow !== 6 && !holidaySet.has(iso)) schoolDaysLeft++;
                     curr.setDate(curr.getDate() + 1);
                 }
             }
@@ -382,9 +428,7 @@
                         let iso = formatDateString(bCurr);
                         let dow = bCurr.getDay();
                         let isHol = publicHolidays.some(h => h.date === iso) || state.customHolidays.some(h => { let ct = bCurr.getTime(); return ct >= parseDateString(h.start).getTime() && ct <= parseDateString(h.end).getTime(); });
-                        if(dow !== 0 && dow !== 6 && !isHol) {
-                            plannedSickDaysLeft++;
-                        }
+                        if(dow !== 0 && dow !== 6 && !isHol) plannedSickDaysLeft++;
                     }
                     bCurr.setDate(bCurr.getDate() + 1);
                 }
@@ -407,7 +451,7 @@
             const btnF = document.getElementById("btnFemale");
             const f = document.getElementById('border-flash'); 
             
-            f.className = ''; void f.offsetWidth; // Reset animation
+            f.className = ''; void f.offsetWidth;
 
             if(gender === "Male") {
                 lbl.style.color = "var(--anim-male)"; btnM.classList.add("active-male"); btnF.classList.remove("active-female"); f.classList.add('flash-male');
@@ -416,7 +460,7 @@
                 lbl.style.color = "var(--anim-female)"; btnF.classList.add("active-female"); btnM.classList.remove("active-male"); f.classList.add('flash-female');
                 showToast("Unlocked Female-specific options:<br>• Menstrual Pain<br>• Heavy Flow & Fatigue<br>• Premenstrual Fatigue", "female");
             }
-            renderIllnessConfig();
+            renderIllnessConfig(); updateCounters();
         }
 
         // --- DUAL SLIDER LOGIC ---
@@ -424,15 +468,9 @@
             let minNode = document.getElementById(minId); let maxNode = document.getElementById(maxId);
             let minVal = parseInt(minNode.value); let maxVal = parseInt(maxNode.value);
             
-            // Enforce minimum gap of 1 (Knots cannot be the same)
             if (minVal >= maxVal) {
-                if (e && e.target === minNode) {
-                    minNode.value = maxVal - 1; 
-                    minVal = maxVal - 1;
-                } else {
-                    maxNode.value = minVal + 1; 
-                    maxVal = minVal + 1;
-                }
+                if (e && e.target === minNode) { minNode.value = maxVal - 1; minVal = maxVal - 1; }
+                else { maxNode.value = minVal + 1; maxVal = minVal + 1; }
             }
             document.getElementById(textId).innerText = `${minVal} - ${maxVal}`;
             
@@ -447,12 +485,37 @@
         updateDualSlider(null, 'minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText');
         updateDualSlider(null, 'custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText');
 
-        // --- GLOBAL DATA INJECTION ---
+        // --- GLOBAL DATA INJECTION & IP AUTO-DETECT ---
         const globalCountries = [{n:"Australia",c:"AU"},{n:"Austria",c:"AT"},{n:"Belgium",c:"BE"},{n:"Brazil",c:"BR"},{n:"Canada",c:"CA"},{n:"China",c:"CN"},{n:"France",c:"FR"},{n:"Germany",c:"DE"},{n:"India",c:"IN"},{n:"Ireland",c:"IE"},{n:"Italy",c:"IT"},{n:"Japan",c:"JP"},{n:"Mexico",c:"MX"},{n:"Netherlands",c:"NL"},{n:"New Zealand",c:"NZ"},{n:"Palestine",c:"PS"},{n:"Poland",c:"PL"},{n:"Portugal",c:"PT"},{n:"Russia",c:"RU"},{n:"South Africa",c:"ZA"},{n:"South Korea",c:"KR"},{n:"Spain",c:"ES"},{n:"Sweden",c:"SE"},{n:"Switzerland",c:"CH"},{n:"Turkey",c:"TR"},{n:"United Kingdom",c:"GB"},{n:"United States",c:"US"}];
         const dl = document.getElementById('countryList');
         globalCountries.sort((a,b)=>a.n.localeCompare(b.n)).forEach(c => { let opt = document.createElement('option'); opt.value = c.n; dl.appendChild(opt); });
 
         let currentCountryCode = null;
+
+        async function autoDetectLocation() {
+            try {
+                showToast("Detecting local region...", "info");
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data.country_name) {
+                    document.getElementById('country').value = data.country_name;
+                    document.getElementById('country').dispatchEvent(new Event('change'));
+                    
+                    if (data.region) {
+                        setTimeout(() => {
+                            document.getElementById('state').value = data.region;
+                            document.getElementById('state').dispatchEvent(new Event('change'));
+                        }, 800);
+                    }
+                    showToast(`Location auto-detected: ${data.city || data.region}, ${data.country_name}`, "success");
+                }
+            } catch (e) {
+                // Fallback context based on instructions
+                document.getElementById('country').value = "Switzerland";
+                document.getElementById('country').dispatchEvent(new Event('change'));
+                showToast("Auto-detect failed. Defaulting to Switzerland.", "info");
+            }
+        }
 
         document.getElementById('country').addEventListener('change', async (e) => {
             const countryName = e.target.value;
@@ -472,7 +535,7 @@
             
             let codeObj = globalCountries.find(c => c.n.toLowerCase() === countryName.toLowerCase());
             if(codeObj) { currentCountryCode = codeObj.c; fetchHolidays(); }
-            else { currentCountryCode = null; publicHolidays = []; calendar.refetchEvents(); updateCounters();}
+            else { currentCountryCode = null; publicHolidays = []; calendar.refetchEvents(); updateCounters(); }
         });
 
         document.getElementById('state').addEventListener('change', fetchHolidays);
@@ -492,8 +555,8 @@
                         return h.counties.some(c => c.toLowerCase().includes(stateTyped) || stateTyped.includes(c.toLowerCase().split('-')[1]));
                     }).map(h => ({ name: h.name, date: h.date }));
                     
-                    calendar.refetchEvents(); 
-                    updateCounters();
+                    calendar.refetchEvents(); updateCounters();
+                    showToast(`Public holidays updated for ${stateTyped || currentCountryCode}.`, "info");
                 }
             } catch(e) {}
         }
@@ -520,15 +583,13 @@
         resizer.addEventListener('mousedown', (e) => { 
             isResizing = true; 
             document.body.style.cursor = 'col-resize'; 
-            document.body.style.userSelect = 'none'; // Prevents text highlighting
-            sidebar.style.transition = 'none'; // Removes CSS lag while dragging
+            document.body.style.userSelect = 'none'; 
+            sidebar.style.transition = 'none'; 
             resizer.classList.add('active');
         });
         
         document.addEventListener('mousemove', (e) => { 
-            if (isResizing && e.clientX > 280 && e.clientX < window.innerWidth - 300) {
-                sidebar.style.width = e.clientX + 'px'; 
-            }
+            if (isResizing && e.clientX > 280 && e.clientX < window.innerWidth - 300) { sidebar.style.width = e.clientX + 'px'; }
         });
         
         document.addEventListener('mouseup', () => { 
@@ -554,10 +615,7 @@
 
         function initCalendar() {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                initialView: 'dayGridMonth', height: 'auto', 
-                firstDay: 1, 
-                showNonCurrentDates: false, 
-                fixedWeekCount: false,
+                initialView: 'dayGridMonth', height: 'auto', firstDay: 1, showNonCurrentDates: false, fixedWeekCount: false,
                 headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
                 events: (info, success) => {
                     let evs = [{ daysOfWeek: [0, 6], display: 'background', color: 'var(--weekend-bg)' }];
@@ -591,7 +649,7 @@
             }
         }
 
-        function toggleIllness(n, c) { if(c) state.activeSymptoms[n] = JSON.parse(JSON.stringify(state.allSymptoms[n])); else delete state.activeSymptoms[n]; renderIllnessConfig(); }
+        function toggleIllness(n, c) { if(c) state.activeSymptoms[n] = JSON.parse(JSON.stringify(state.allSymptoms[n])); else delete state.activeSymptoms[n]; renderIllnessConfig(); updateCounters(); showToast(`Toggled ${n}`, "info"); }
         function toggleMod(n, m, c) { let mods = state.activeSymptoms[n].modifiers; if(c && !mods.includes(m)) mods.push(m); else if(!c) state.activeSymptoms[n].modifiers = mods.filter(x => x !== m); }
 
         function addCustomExcuse() {
@@ -611,14 +669,34 @@
             if(!n || !s || !e) return showToast("Fill all holiday fields.", "error"); 
             state.customHolidays.push({name:n, start:s, end:e});
             document.getElementById('holName').value = ''; renderHolidaysTable(); calendar.refetchEvents(); updateCounters();
+            showToast(`Added Custom Holiday: ${n}`, "success");
         }
         function renderHolidaysTable() {
             const b = document.querySelector('#holiday-table tbody'); b.innerHTML = '';
             state.customHolidays.forEach(h => b.insertAdjacentHTML('beforeend', `<tr><td>${h.name}</td><td>${h.start}</td><td>${h.end}</td></tr>`));
         }
 
-        // --- ROBUST GENERATOR ---
-        function generateStrategy() {
+        // --- ASYNC GENERATOR (With Progress Bar) ---
+        async function triggerGeneration() {
+            const overlay = document.getElementById('loadingOverlay');
+            const progressFill = document.getElementById('genProgressFill');
+            const progressText = document.getElementById('genProgressText');
+            
+            overlay.style.display = 'flex';
+            progressFill.style.width = '0%';
+            progressText.innerText = 'Calculating valid dates...';
+            
+            if(window.innerWidth <= 768) toggleSidebar();
+            
+            // Allow DOM to update overlay before heavy lifting
+            await new Promise(r => setTimeout(r, 50)); 
+            
+            await generateStrategyAsync(progressFill, progressText);
+            
+            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+        }
+
+        async function generateStrategyAsync(progressFill, progressText) {
             sickBlocks = []; 
             const startStr = document.getElementById('schoolStart').value; 
             const endStr = document.getElementById('schoolEnd').value;
@@ -626,7 +704,6 @@
             const minB = parseInt(document.getElementById('minBlock').value); 
             const maxB = parseInt(document.getElementById('maxBlock').value);
             const gap = parseInt(document.getElementById('minGap').value);
-            if(window.innerWidth <= 768) toggleSidebar();
 
             let holidaySet = new Set();
             publicHolidays.forEach(h => holidaySet.add(h.date));
@@ -648,19 +725,28 @@
 
             if(validDays.length < target) {
                 showToast(`Error: Only ${validDays.length} valid school days available, but target is ${target}.`, "error");
-                updateCounters();
-                return;
+                updateCounters(); return;
             }
 
             let pool = validDays.slice();
             let missed = 0; 
+            let attempts = 0;
+            const MAX_ATTEMPTS = 500; 
 
-            // Loop until target hit or pool runs dry
-            while(missed < target && pool.length > 0) {
+            progressText.innerText = 'Placing schedule blocks...';
+
+            while(missed < target && pool.length > 0 && attempts < MAX_ATTEMPTS) {
+                attempts++; 
+                
+                // Update Progress UI every 10 attempts
+                if (attempts % 10 === 0) {
+                    progressFill.style.width = Math.min(100, (missed / target) * 100) + '%';
+                    await new Promise(r => setTimeout(r, 10)); // Yield thread to browser
+                }
+                
                 let sStr = pool[Math.floor(Math.random() * pool.length)]; 
                 let dur = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
                 
-                // Collect exact school days for this block
                 let daysToTake = [];
                 for(let i=0; i<dur; i++) {
                     let tDt = parseDateString(sStr);
@@ -669,12 +755,8 @@
                     if(validDays.includes(tStr)) daysToTake.push(tStr);
                 }
                 
-                if (daysToTake.length === 0) {
-                    pool = pool.filter(p => p !== sStr);
-                    continue;
-                }
+                if (daysToTake.length === 0) { pool = pool.filter(p => p !== sStr); continue; }
 
-                // If block pushes us over target, shorten it exactly to what we need
                 if (missed + daysToTake.length > target) {
                     daysToTake = daysToTake.slice(0, target - missed);
                     dur = daysToTake.length;
@@ -683,17 +765,12 @@
                 let bMissed = daysToTake.length; 
                 let eStr = daysToTake[daysToTake.length - 1];
 
-                // Check Gaps
                 let gapFail = sickBlocks.some(b => { 
                     let d1 = Math.abs(parseDateString(sStr) - parseDateString(b.end)) / 864e5; 
                     let d2 = Math.abs(parseDateString(eStr) - parseDateString(b.start)) / 864e5; 
                     return d1 < gap || d2 < gap; 
                 });
-                
-                if(gapFail) {
-                    pool = pool.filter(p => p !== sStr);
-                    continue;
-                }
+                if(gapFail) { pool = pool.filter(p => p !== sStr); continue; }
 
                 let validIllnesses = Object.keys(state.activeSymptoms).filter(k => {
                     let s = state.activeSymptoms[k]; if(s.gender && s.gender !== currentGender) return false;
@@ -701,11 +778,7 @@
                     if(s.is_period) return !sickBlocks.some(b => b.is_period && Math.abs((parseDateString(sStr)-parseDateString(b.start))/864e5) < 26);
                     return true;
                 });
-                
-                if(!validIllnesses.length) {
-                    pool = pool.filter(p => p !== sStr);
-                    continue;
-                }
+                if(!validIllnesses.length) { pool = pool.filter(p => p !== sStr); continue; }
                 
                 let cN = validIllnesses[Math.floor(Math.random()*validIllnesses.length)]; 
                 let cD = state.activeSymptoms[cN];
@@ -713,19 +786,15 @@
                 
                 sickBlocks.push({start:sStr, end:eStr, reason:rS, missed:bMissed, is_period:cD.is_period});
                 missed += bMissed;
-                
-                // Purge used days from pool
                 daysToTake.forEach(d => { pool = pool.filter(p => p !== d); });
             }
             
-            if (missed < target) {
-                showToast(`Finished. Constraints were too tight to place all days. Placed ${missed}/${target}.`, "error");
-            } else {
-                showToast(`Successfully generated ${missed} days off!`, "success");
-                switchTab('cal');
-            }
-            calendar.refetchEvents();
-            updateCounters();
+            progressFill.style.width = '100%';
+            
+            if (missed < target) { showToast(`Warning: Constraints tight. Placed ${missed}/${target} days.`, "error"); } 
+            else { showToast(`Successfully generated ${missed} days off!`, "success"); switchTab('cal'); }
+            
+            calendar.refetchEvents(); updateCounters();
         }
 
         function exportSettings() {
@@ -734,7 +803,7 @@
             const n = document.createElement('a'); n.setAttribute("href", s); n.setAttribute("download", "settings.json"); n.click();
             showToast("Settings Exported!");
         }
-        function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); updateCounters(); showToast("Schedule Cleared.");}
+        function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); updateCounters(); showToast("Schedule Cleared.", "info");}
         
         document.getElementById('importFile').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -745,7 +814,7 @@
                     if(data.target) { document.getElementById('targetDays').value = data.target; document.getElementById('targetValText').innerText = data.target; }
                     if (data.state) { state = data.state; }
                     renderIllnessConfig(); renderHolidaysTable(); calendar.refetchEvents(); updateCounters();
-                    showToast("Settings imported successfully!");
+                    showToast("Settings imported successfully!", "success");
                 } catch (err) { showToast("Invalid JSON file.", "error"); }
             };
             reader.readAsText(file);
