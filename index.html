@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>School Excuse Scheduler</title>
+    <title>School Excuse Scheduler Pro</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,149 +14,95 @@
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
             --bg-color: #121212; --text-color: #e0e0e0; --sidebar-bg: #1e1e1e;
             --border: #333333; --primary: #ff4b4b; --input-bg: #2c2c2c;
             --anim-female: #ff69b4; --anim-male: #1e90ff; --card-bg: #242424;
-            --weekend-bg: rgba(46, 204, 113, 0.15); 
+            --weekend-bg: rgba(46, 204, 113, 0.1); 
         }
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { margin: 0; display: flex; background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; position: relative; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { margin: 0; display: flex; background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; }
         
-        /* Modals & Overlays */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s ease; }
+        /* Overlays & Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s; }
         .modal-overlay.show { display: flex; opacity: 1; }
-        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; transform: translateY(-20px); transition: transform 0.3s ease;}
-        .modal-overlay.show .modal-content { transform: translateY(0); }
-        .modal-content h2 { color: var(--primary); margin-top: 0; }
-        .modal-content ul { padding-left: 20px; line-height: 1.6; color: #ccc;}
-        .close-modal-x { position: absolute; top: 15px; right: 20px; font-size: 1.5em; cursor: pointer; color: #888; transition: 0.2s; }
+        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; max-height: 90vh; overflow-y: auto;}
+        .close-modal-x { position: absolute; top: 15px; right: 20px; font-size: 1.5em; cursor: pointer; color: #888; }
         .close-modal-x:hover { color: white; }
 
-        /* Advanced Toast System */
-        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 90vw; pointer-events: none;}
-        .toast { background: var(--card-bg); border-left: 4px solid var(--primary); color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateX(50px); transition: all 0.3s ease; display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;}
-        .toast.show { opacity: 1; transform: translateX(0); }
-        .toast-content { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; gap: 10px; font-size: 0.9em; }
-        .toast-progress-bar { height: 4px; background: var(--primary); width: 100%; transform-origin: left; }
-        .toast.female-toast { border-left-color: var(--anim-female); }
-        .toast.female-toast .toast-progress-bar { background: var(--anim-female); }
-        .toast.male-toast { border-left-color: var(--anim-male); }
-        .toast.male-toast .toast-progress-bar { background: var(--anim-male); }
-        .toast.success-toast { border-left-color: #2ecc71; }
-        .toast.success-toast .toast-progress-bar { background: #2ecc71; }
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;}
+        .toast { background: var(--card-bg); border-left: 4px solid var(--primary); color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; animation: slideIn 0.3s forwards;}
+        .toast-content { padding: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.9em; }
+        .toast-progress { height: 4px; background: var(--primary); width: 100%; transform-origin: left; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0;} to { transform: translateX(0); opacity: 1;} }
 
-        /* Loading Overlay for Generation */
-        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: none; flex-direction: column; align-items: center; justify-content: center; color: white;}
-        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;}
-        .gen-progress-container { width: 80%; max-width: 400px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; margin-top: 15px;}
-        .gen-progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s;}
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        #mobile-menu-btn { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; background: var(--sidebar-bg); color: var(--text-color); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 1.2em; transition: 0.2s; }
-        
-        .sidebar { width: 340px; min-width: 280px; flex-shrink: 0; background: var(--sidebar-bg); padding: 20px; overflow-y: auto; height: 100%; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid var(--border); transition: transform 0.3s ease;}
-        #close-sidebar-btn { display: none; }
-        .resizer { width: 6px; background: var(--border); cursor: col-resize; z-index: 10; flex-shrink: 0; transition: background 0.2s; }
+        /* UI Elements */
+        .sidebar { width: 340px; min-width: 280px; flex-shrink: 0; background: var(--sidebar-bg); padding: 20px; overflow-y: auto; height: 100%; z-index: 100; border-right: 1px solid var(--border); transition: transform 0.3s ease;}
+        .resizer { width: 6px; background: var(--border); cursor: col-resize; z-index: 10; flex-shrink: 0; }
         .resizer:hover, .resizer.active { background: var(--primary); }
-        .main-content { flex-grow: 1; padding: 30px 20px 20px; overflow-y: auto; height: 100%; position: relative; min-width: 0; scroll-behavior: smooth;}
+        .main-content { flex-grow: 1; padding: 20px; overflow-y: auto; height: 100%; position: relative;}
         
-        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85em; color: #bbb; transition: color 0.3s; text-transform: uppercase; letter-spacing: 0.5px;}
-        input, select { width: 100%; padding: 10px; margin-top: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border); border-radius: 6px; transition: border 0.2s;}
-        input:focus, select:focus { outline: none; border-color: var(--primary); }
-        input[type="range"] { accent-color: var(--primary); cursor: pointer; }
-        input[type="checkbox"] { width: auto; margin-right: 8px; transform: scale(1.2); accent-color: var(--primary); cursor: pointer;}
-        button { background-color: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;}
-        button:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 75, 75, 0.3); }
-        button:active { transform: translateY(1px); }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85em; color: #bbb; text-transform: uppercase; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border); border-radius: 6px; }
+        input[type="color"] { padding: 2px; height: 40px; }
+        button { background-color: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; text-transform: uppercase; transition: 0.2s;}
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-secondary { background-color: #444; }
-        .btn-secondary:hover { background-color: #555; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        
-        .qr-btn { background: transparent; border: 1px solid var(--border); color: var(--text-color); width: auto; padding: 8px 12px; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 20px; white-space: nowrap;}
-        .qr-btn:hover { background: var(--input-bg); border-color: #666; box-shadow: none; transform: none;}
+        .icon-btn { background: transparent; border: 1px solid var(--border); width: auto; padding: 8px 12px; margin: 0; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;}
+        .icon-btn:hover { background: var(--input-bg); }
 
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; gap: 15px;}
-        .header-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
-        
         .gender-container { display: flex; gap: 20px; font-weight: bold; font-size: 1.2em; margin-top: 8px; }
-        .gender-btn { cursor: pointer; transition: 0.2s; color: #555; padding: 5px 10px; border-radius: 6px;}
-        .gender-btn:hover { background: var(--input-bg); }
-        .gender-btn.active-male { color: var(--anim-male); text-shadow: 0 0 10px rgba(30,144,255,0.4); background: rgba(30,144,255,0.1); }
-        .gender-btn.active-female { color: var(--anim-female); text-shadow: 0 0 10px rgba(255,105,180,0.4); background: rgba(255,105,180,0.1); }
+        .gender-btn { cursor: pointer; padding: 5px 10px; border-radius: 6px; color: #555;}
+        .gender-btn.active-male { color: var(--anim-male); background: rgba(30,144,255,0.1); }
+        .gender-btn.active-female { color: var(--anim-female); background: rgba(255,105,180,0.1); }
 
-        .dual-slider-container { position: relative; width: 100%; height: 30px; margin-top: 10px; }
-        .dual-slider-track { position: absolute; left: 9px; right: 9px; height: 6px; background: var(--input-bg); top: 12px; border-radius: 3px; z-index: 1; }
-        .dual-slider-fill { position: absolute; height: 100%; background: var(--primary); border-radius: 3px; z-index: 2; transition: left 0.1s, width 0.1s; }
-        .dual-slider-container input[type="range"] { position: absolute; width: 100%; top: 0; left: 0; margin: 0; background: none; pointer-events: none; z-index: 3; -webkit-appearance: none; height: 30px; }
-        .dual-slider-container input[type="range"]::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; transition: transform 0.1s;}
-        .dual-slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-        .dual-slider-container input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; transition: transform 0.1s;}
-        .dual-slider-container input[type="range"]::-moz-range-thumb:hover { transform: scale(1.2); }
-
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch;}
-        .tab { padding: 10px 20px; cursor: pointer; border-radius: 8px; background: var(--input-bg); color: #888; white-space: nowrap; transition: 0.2s; font-weight: 600;}
-        .tab:hover { background: #333; color: white;}
-        .tab.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(255,75,75,0.3);}
-        .tab-content { display: none; animation: fadeIn 0.3s ease;}
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px;}
+        .tab { padding: 10px 20px; cursor: pointer; border-radius: 8px; background: var(--input-bg); font-weight: 600; transition: 0.2s; white-space: nowrap;}
+        .tab.active { background: var(--primary); color: white; }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .stats-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;}
-        .stat-card { flex: 1; min-width: 120px; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; justify-content: center; transition: 0.3s;}
-        .stat-card.highlight { border-color: var(--primary); background: rgba(255, 75, 75, 0.05); }
-        .stat-value { font-size: 2em; font-weight: bold; color: white; line-height: 1; margin-bottom: 5px; transition: color 0.3s;}
-        .stat-card.highlight .stat-value { color: var(--primary); }
-        .stat-label { font-size: 0.85em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;}
+        .stats-container { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;}
+        .stat-card { flex: 1; min-width: 110px; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 15px; border-radius: 8px; text-align: center;}
+        .stat-value { font-size: 1.8em; font-weight: bold; color: white; }
+        .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase;}
 
-        .card { background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;}
+        .card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; padding-left: 20px;}
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; border-radius: 6px; overflow: hidden;}
-        th, td { border: 1px solid var(--border); padding: 10px; text-align: left; }
-        th { background: var(--input-bg); font-weight: 600; text-transform: uppercase; font-size: 0.85em;}
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+        
+        #calendar { background: var(--sidebar-bg); padding: 15px; border-radius: 12px; }
+        .fc { --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); --fc-border-color: var(--border); --fc-button-text-color: var(--text-color); --fc-button-bg-color: var(--input-bg); }
+        .fc-day-other { visibility: hidden; }
 
-        #calendar { background: var(--sidebar-bg); padding: 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); overflow-x: auto;}
-        .fc { --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); --fc-border-color: var(--border); --fc-button-text-color: var(--text-color); --fc-button-bg-color: var(--input-bg); --fc-button-border-color: var(--border); --fc-button-hover-bg-color: #444; --fc-button-active-bg-color: var(--primary); --fc-button-active-border-color: var(--primary);}
-        .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--text-color); text-decoration: none; font-weight: 600;}
-        .fc-day-other { visibility: hidden; } 
+        .locked-day { background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,0,0.1) 10px, rgba(255,0,0,0.1) 20px) !important; }
+        .blacklisted-day { background: #333 !important; opacity: 0.5; }
 
-        #border-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; box-shadow: inset 0 0 0px transparent; }
-        .flash-female { animation: flashPink 2s ease-out; }
-        .flash-male { animation: flashBlue 2s ease-out; }
-        @keyframes flashPink { 0% { box-shadow: inset 0 0 80px 20px var(--anim-female); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
-        @keyframes flashBlue { 0% { box-shadow: inset 0 0 80px 20px var(--anim-male); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
+        #mobile-menu-btn { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 8px; border-radius: 6px; }
 
         @media (max-width: 768px) {
             #mobile-menu-btn { display: block; }
             .resizer { display: none; }
-            .sidebar { position: fixed; left: -100%; top: 0; width: 100% !important; height: 100%; z-index: 2000; padding-top: 60px; box-shadow: 10px 0 20px rgba(0,0,0,0.5);}
+            .sidebar { position: fixed; left: -100%; top: 0; width: 100% !important; padding-top: 60px; }
             .sidebar.open { left: 0; }
-            #close-sidebar-btn { display: block; background: transparent; color: var(--text-color); border: none; font-size: 32px; position: absolute; top: 10px; right: 20px; width: auto; cursor: pointer; padding: 0; box-shadow: none; margin: 0;}
-            .main-content { padding-top: 70px; padding-left: 10px; padding-right: 10px;}
+            .main-content { padding-top: 60px; }
             .grid-2 { grid-template-columns: 1fr; }
-            .header-row { flex-direction: column; align-items: stretch; gap: 15px; }
-            .header-buttons { justify-content: space-between; }
-            .qr-btn { flex: 1; }
-            .toast-container { bottom: 10px; right: 10px; left: 10px; }
-            .toast { width: 100%; }
         }
 
         @media print {
-            body { background: #ffffff !important; color: #000000 !important; }
-            .sidebar, .tabs, .header-buttons, #mobile-menu-btn, .toast-container, #startupModal, #qrModal, .resizer, #border-flash, #loadingOverlay { display: none !important; }
-            .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; display: block !important; }
-            .header-row { border: none; padding: 0; margin: 0;}
-            .stats-container { margin-bottom: 20px; }
-            .stat-card { border: 1px solid #ccc !important; box-shadow: none !important; background: #fff !important; }
+            body { background: #fff !important; color: #000 !important; }
+            .sidebar, .tabs, .icon-btn, #mobile-menu-btn, .toast-container, .modal-overlay, #chartContainer { display: none !important; }
+            .main-content { padding: 0 !important; }
+            .stat-card { border: 1px solid #ccc !important; background: #fff !important; }
             .stat-value { color: #000 !important; }
-            .stat-label { color: #555 !important; }
-            #calendar { background: #ffffff !important; box-shadow: none !important; padding: 0 !important;}
-            .fc { --fc-page-bg-color: #ffffff; --fc-neutral-bg-color: #ffffff; --fc-border-color: #000000; --fc-button-text-color: #000; --fc-button-bg-color: #eee; --fc-button-border-color: #ccc; }
-            .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: #000000 !important; }
-            .fc-day-bg { background: #ffffff !important; }
-            .fc-event { border: 1px solid #000 !important; background: #fff !important; color: #000 !important; }
-            .fc-event-title { color: #000 !important; font-weight: bold; }
+            #calendar { background: #fff !important; }
+            .fc { --fc-page-bg-color: #fff; --fc-border-color: #000; --fc-button-display: none; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
@@ -165,131 +111,138 @@
 
     <div id="startupModal" class="modal-overlay">
         <div class="modal-content">
-            <h2>⚠️ Important Notice</h2>
-            <ul>
-                <li><strong>Educational Use Only:</strong> This tool is a logistical simulation. It must not be used to skip school or commit truancy. You are responsible for any real-world actions.</li>
-                <li><strong>Privacy First:</strong> This tool runs entirely offline in your browser. It <b>does not</b> track you, collect data, or send your schedule anywhere.</li>
-                <li><strong>Verify Your Data:</strong> Always double-check generated dates, school holidays, and settings before utilizing any information.</li>
-            </ul>
-            <label style="color: white; font-size: 1em; margin-top: 20px; cursor: pointer; display: flex; align-items: center; text-transform: none;">
-                <input type="checkbox" id="dontShowAgain"> Don't show this again.
-            </label>
-            <button onclick="closeStartupModal()">I Understand & Agree</button>
+            <h2 style="margin-top:0;">⚠️ Privacy & Usage Notice</h2>
+            <p><strong>Educational Simulation Only:</strong> This tool builds logistical models. It is not for truancy.</p>
+            <p><strong>Zero Tracking:</strong> We use your IP address strictly to auto-detect your region for accurate holidays. <b>No data is stored, sold, or tracked by any central server.</b> All schedules are saved locally on your device via <code>localStorage</code>.</p>
+            <label style="text-transform:none;"><input type="checkbox" id="dontShowAgain"> Don't show this again.</label>
+            <button onclick="closeModal('startupModal')">I Understand</button>
         </div>
     </div>
 
-    <div id="qrModal" class="modal-overlay" onclick="closeQRModal(event)">
+    <div id="qrModal" class="modal-overlay" onclick="closeOutside(event, 'qrModal')">
         <div class="modal-content" style="text-align: center; max-width: 350px;">
-            <span class="close-modal-x" onclick="document.getElementById('qrModal').classList.remove('show')">×</span>
-            <h3 style="margin-top:0;">Share Schedule</h3>
-            <p style="font-size: 0.9em; color: #aaa;">Scan QR code to open this site on another device.</p>
-            <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0; background: white; padding: 15px; border-radius: 8px;"></div>
+            <span class="close-modal-x" onclick="closeModal('qrModal')">×</span>
+            <h3>Share via QR</h3>
+            <div id="qrcode" style="display:flex; justify-content:center; background:#fff; padding:15px; border-radius:8px;"></div>
         </div>
     </div>
 
-    <div id="loadingOverlay">
-        <div class="spinner"></div>
-        <h3 style="margin:0;">Generating Strategy...</h3>
-        <div class="gen-progress-container">
-            <div class="gen-progress-fill" id="genProgressFill"></div>
+    <div id="printModal" class="modal-overlay" onclick="closeOutside(event, 'printModal')">
+        <div class="modal-content">
+            <span class="close-modal-x" onclick="closeModal('printModal')">×</span>
+            <h3>Print Preview</h3>
+            <p>Select what to print:</p>
+            <button onclick="window.print(); closeModal('printModal')">Print Calendar Grid</button>
+            <button class="btn-secondary" onclick="generateTextReport()">Download Text Summary (.txt)</button>
         </div>
-        <p id="genProgressText" style="color:#aaa; font-size:0.9em; margin-top:10px;">Mapping dates...</p>
     </div>
 
-    <div id="border-flash"></div>
     <div class="toast-container" id="toastContainer"></div>
-    
-    <button id="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
+    <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
 
     <div class="sidebar" id="sidebar">
-        <button id="close-sidebar-btn" onclick="toggleSidebar()">×</button>
-        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">🗓️ Settings</h3>
+        <h3 style="margin-top:0;">🗓️ Settings</h3>
         
-        <label>School Start Date</label><input type="date" id="schoolStart" onchange="updateCounters()">
-        <label>School End Date</label><input type="date" id="schoolEnd" onchange="updateCounters()">
+        <label>School Dates</label>
+        <div class="grid-2">
+            <input type="date" id="schoolStart" onchange="saveState(); updateDash()">
+            <input type="date" id="schoolEnd" onchange="saveState(); updateDash()">
+        </div>
         
-        <label>Country</label>
-        <input type="text" id="country" list="countryList" placeholder="Search or type country..." autocomplete="off">
+        <label>Region (Holidays)</label>
+        <input type="text" id="country" list="countryList" placeholder="Country" autocomplete="off">
         <datalist id="countryList"></datalist>
-
-        <label>State / Province</label>
-        <input type="text" id="state" list="stateList" placeholder="Search or type state..." autocomplete="off">
+        <input type="text" id="state" list="stateList" placeholder="State/Province" autocomplete="off">
         <datalist id="stateList"></datalist>
         
-        <label id="genderLabel" style="color: var(--anim-male); margin-top: 25px;">Gender</label>
+        <label>Weekend Days</label>
+        <select id="weekendType" onchange="saveState(); updateDash(); calendar.refetchEvents();">
+            <option value="0,6">Saturday & Sunday</option>
+            <option value="5,6">Friday & Saturday</option>
+            <option value="4,5">Thursday & Friday</option>
+        </select>
+
+        <label id="genderLabel" style="color:var(--anim-male); margin-top:20px;">Gender</label>
         <div class="gender-container">
             <span id="btnMale" class="gender-btn active-male" onclick="setGender('Male')">Male</span>
             <span id="btnFemale" class="gender-btn" onclick="setGender('Female')">Female</span>
         </div>
 
-        <hr style="margin: 25px 0; border: 0; border-top: 1px solid var(--border);">
-
-        <label>Target Days to Miss: <span id="targetValText" style="color:white; font-size: 1.1em; text-transform: none;">20</span></label>
-        <input type="range" id="targetDays" min="1" max="80" value="20" oninput="document.getElementById('targetValText').innerText = this.value; updateCounters();">
-        
-        <label>Sick Block Length: <span id="blockRangeText" style="color:white; font-size: 1.1em; text-transform: none;">1 - 7</span> days</label>
-        <div class="dual-slider-container">
-            <div class="dual-slider-track"><div class="dual-slider-fill" id="blockSliderFill"></div></div>
-            <input type="range" id="minBlock" min="1" max="7" value="1" oninput="updateDualSlider(event, 'minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
-            <input type="range" id="maxBlock" min="1" max="7" value="7" oninput="updateDualSlider(event, 'minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
+        <div id="periodTrackerUI" style="display:none; margin-top:15px; padding:10px; background:var(--input-bg); border-radius:8px; border-left:3px solid var(--anim-female);">
+            <label style="margin-top:0;">Advanced Period Tracker</label>
+            <div class="grid-2">
+                <div><span style="font-size:0.8em;color:#aaa;">Last Start Date</span><input type="date" id="lastPeriod" onchange="saveState()"></div>
+                <div><span style="font-size:0.8em;color:#aaa;">Cycle (Days)</span><input type="number" id="cycleLength" value="28" onchange="saveState()"></div>
+            </div>
+            <p style="font-size:0.75em; color:#888; margin:5px 0 0;">Ensures period-related excuses strictly follow your biological cycle.</p>
         </div>
 
-        <label>Min Gap Between Blocks: <span id="minGapText" style="color:white; font-size: 1.1em; text-transform: none;">3</span> days</label>
-        <input type="range" id="minGap" min="1" max="15" value="3" oninput="document.getElementById('minGapText').innerText = this.value">
+        <hr style="border-color:var(--border); margin:20px 0;">
 
-        <button onclick="triggerGeneration()" style="margin-top: 30px;">Generate Strategy</button>
+        <label>Target Days to Miss: <span id="targetValText" style="color:#fff;">20</span></label>
+        <input type="range" id="targetDays" min="1" max="80" value="20" oninput="document.getElementById('targetValText').innerText=this.value; saveState();">
+        
+        <label>Require Doctor's Note if > <span id="docValText" style="color:#fff;">3</span> Days</label>
+        <input type="range" id="docNoteLimit" min="1" max="7" value="3" oninput="document.getElementById('docValText').innerText=this.value; saveState();">
+
+        <div class="grid-2" style="margin-top:15px;">
+            <div><label>Min Gap</label><input type="number" id="minGap" value="3" min="1" onchange="saveState()"></div>
+            <div><label>Half Days</label><select id="allowHalf" onchange="saveState()"><option value="yes">Allow</option><option value="no">Full Only</option></select></div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button onclick="undo()" style="margin:0; background:#444;">↩️</button>
+            <button onclick="redo()" style="margin:0; background:#444;">↪️</button>
+            <button onclick="generateStrategy()" style="margin:0; flex-grow:1;">Generate</button>
+        </div>
         <button class="btn-secondary" onclick="clearSchedule()">Clear Schedule</button>
-
-        <a href="https://github.com/k4sprl/school-excuse-scheduler" target="_blank" style="margin-top: auto; padding-top: 20px; text-align: center; color: #888; text-decoration: none; font-size: 0.9em;">View on GitHub</a>
     </div>
 
     <div class="resizer" id="resizer"></div>
 
-    <div class="main-content">
+    <div class="main-content" id="mainContent">
         <div class="header-row">
-            <div class="tabs" style="margin: 0; border: none;">
-                <div class="tab active" onclick="switchTab('cal')">📅 Schedule</div>
-                <div class="tab" onclick="switchTab('sym')">⚙️ Illness Config</div>
-                <div class="tab" onclick="switchTab('data')">📁 Holidays & Backup</div>
+            <div class="tabs" style="margin:0;">
+                <div class="tab active" onclick="switchTab('cal')">📅 Dashboard</div>
+                <div class="tab" onclick="switchTab('sym')">⚙️ Excuses</div>
+                <div class="tab" onclick="switchTab('data')">📁 Dates & Data</div>
             </div>
-            <div class="header-buttons">
-                <button class="qr-btn" onclick="openQRModal()">📱 QR Code</button>
-                <button class="qr-btn" onclick="window.print()" style="background: var(--input-bg);">🖨️ Print</button>
+            <div style="display:flex; gap:10px;">
+                <button class="icon-btn" onclick="exportICS()">📅 .ICS</button>
+                <button class="icon-btn" onclick="shareLink()">🔗 Share</button>
+                <button class="icon-btn" onclick="openModal('printModal')">🖨️ Print</button>
             </div>
         </div>
 
         <div id="tab-cal" class="tab-content active">
             <div class="stats-container">
-                <div class="stat-card">
-                    <div class="stat-value" id="statTotalDays">0</div>
-                    <div class="stat-label">Days Left</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="statSchoolDays">0</div>
-                    <div class="stat-label">School Days Left</div>
-                </div>
-                <div class="stat-card highlight">
-                    <div class="stat-value" id="statAttendingDays">0</div>
-                    <div class="stat-label">Attending if Followed</div>
-                </div>
+                <div class="stat-card"><div class="stat-value" id="statDays">0</div><div class="stat-label">School Days</div></div>
+                <div class="stat-card"><div class="stat-value" id="statMissed" style="color:var(--primary)">0</div><div class="stat-label">Days Missed</div></div>
+                <div class="stat-card"><div class="stat-value" id="statScore">100%</div><div class="stat-label">Believability</div></div>
+                <div class="stat-card"><div class="stat-value" id="statDocs">0</div><div class="stat-label">Doc Notes Req.</div></div>
             </div>
-
+            
+            <p style="font-size:0.85em; color:#aaa; margin-top:0;"><i>Tip: Click any day on the calendar to "Lock" it (force a sick day) or "Blacklist" it (prevent sick days).</i></p>
             <div id="calendar"></div>
+            
+            <div id="chartContainer" style="margin-top:20px; background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid var(--border); display:none;">
+                <h3 style="margin-top:0;">Analytics Dashboard</h3>
+                <div style="height:250px; display:flex; justify-content:center;"><canvas id="excuseChart"></canvas></div>
+            </div>
         </div>
 
         <div id="tab-sym" class="tab-content">
             <div class="card">
-                <h3 style="margin-top:0; color: var(--primary);">➕ Create Custom Excuse</h3>
-                <input type="text" id="custName" placeholder="e.g. Dental Surgery">
-                
-                <label>Excuse Duration: <span id="custBlockRangeText" style="color:white; text-transform: none;">1 - 7</span> days</label>
-                <div class="dual-slider-container" style="max-width: 400px; margin-bottom: 25px;">
-                    <div class="dual-slider-track"><div class="dual-slider-fill" id="custBlockSliderFill"></div></div>
-                    <input type="range" id="custMin" min="1" max="7" value="1" oninput="updateDualSlider(event, 'custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
-                    <input type="range" id="custMax" min="1" max="7" value="7" oninput="updateDualSlider(event, 'custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
+                <h3 style="margin:0; color:var(--primary);">➕ Create Excuse</h3>
+                <div class="grid-2">
+                    <input type="text" id="custName" placeholder="Name (e.g. Dentist)">
+                    <input type="color" id="custColor" value="#ff4b4b">
                 </div>
-                
-                <button onclick="addCustomExcuse()" style="max-width: 400px;">Add to Roster</button>
+                <div class="grid-2" style="margin-top:10px;">
+                    <div><label>Min/Max Days</label><input type="text" id="custDays" placeholder="1-3"></div>
+                    <div><label>Weight (1-10)</label><input type="number" id="custWeight" value="5" min="1" max="10"></div>
+                </div>
+                <button onclick="addCustomExcuse()">Add to Roster</button>
             </div>
             <div id="illness-list"></div>
         </div>
@@ -297,336 +250,206 @@
         <div id="tab-data" class="tab-content">
             <div class="grid-2">
                 <div class="card">
-                    <h3 style="margin-top:0; color: var(--primary);">🏫 School Holiday Periods</h3>
-                    <p style="font-size: 0.85em; color: #aaa;">Add periods where school is closed.</p>
-                    <input type="text" id="holName" placeholder="e.g., Autumn Break">
-                    <div class="grid-2">
-                        <div><label>Start</label><input type="date" id="holStart" onchange="updateCounters()"></div>
-                        <div><label>End</label><input type="date" id="holEnd" onchange="updateCounters()"></div>
-                    </div>
-                    <button onclick="addCustomHoliday()">Add School Holiday</button>
+                    <h3 style="margin:0; color:var(--primary);">🏫 Exam/Holiday Blacklist</h3>
+                    <p style="font-size:0.8em; color:#aaa;">Dates the generator MUST avoid.</p>
+                    <input type="text" id="holName" placeholder="Event Name">
+                    <div class="grid-2"><input type="date" id="holStart"><input type="date" id="holEnd"></div>
+                    <button onclick="addBlacklist()">Add Blacklist Date</button>
                     <table id="holiday-table"><thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead><tbody></tbody></table>
                 </div>
                 <div class="card">
-                    <h3 style="margin-top:0; color: var(--primary);">💾 Settings Backup</h3>
-                    <p style="font-size: 0.85em; color: #aaa;">Export or import your active settings and custom data.</p>
-                    <button onclick="exportSettings()">⬇️ Export Settings (JSON)</button>
-                    <label style="margin-top:25px;">⬆️ Import Settings (JSON)</label>
-                    <input type="file" id="importFile" accept=".json" style="padding: 5px; border: none; background: transparent;">
+                    <h3 style="margin:0; color:var(--primary);">💾 Data Management</h3>
+                    <button onclick="exportSettings()">Export Settings (.json)</button>
+                    <label>Import Settings</label><input type="file" id="importFile" accept=".json">
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- SAFE DATE PARSERS ---
-        function parseDateString(str) { let parts = str.split('-'); return new Date(parts[0], parts[1] - 1, parts[2]); }
-        function formatDateString(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
+        // --- CORE UTILS & STATE ---
+        const sDate = s => { let p=s.split('-'); return new Date(p[0],p[1]-1,p[2]); };
+        const fDate = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        const getWeekends = () => document.getElementById('weekendType').value.split(',').map(Number);
+        const isWeekend = (dStr) => getWeekends().includes(sDate(dStr).getDay());
 
-        // --- ADVANCED TOAST SYSTEM ---
-        function showToast(message, type = "info") {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}-toast`;
-            
-            const content = document.createElement('div');
-            content.className = 'toast-content';
-            content.innerHTML = `<span>${message}</span> <span style="cursor:pointer; color:#aaa; font-size: 1.5em; padding-left: 10px;" onclick="this.parentElement.parentElement.remove()">×</span>`;
-            
-            const bar = document.createElement('div');
-            bar.className = 'toast-progress-bar';
-            
-            toast.appendChild(content); toast.appendChild(bar);
-            container.appendChild(toast);
-            
-            let timeLeft = 20000; let lastTime = performance.now(); let isHovered = false; let reqId;
-
-            function updateProgress(time) {
-                if (!isHovered) { timeLeft -= (time - lastTime); } 
-                else { timeLeft = 20000; } // Reset on hover
-                lastTime = time;
-                
-                bar.style.width = Math.max(0, (timeLeft / 20000) * 100) + "%";
-                if (timeLeft <= 0) {
-                    toast.classList.remove('show');
-                    setTimeout(() => toast.remove(), 300);
-                } else {
-                    reqId = requestAnimationFrame(updateProgress);
-                }
-            }
-            
-            toast.addEventListener('mouseenter', () => { isHovered = true; });
-            toast.addEventListener('mouseleave', () => { isHovered = false; lastTime = performance.now(); });
-            
-            setTimeout(() => {
-                toast.classList.add('show');
-                lastTime = performance.now();
-                reqId = requestAnimationFrame(updateProgress);
-            }, 10);
-        }
-
-        window.onload = async () => {
-            if (localStorage.getItem('hideStartupModal') !== 'true') {
-                document.getElementById('startupModal').classList.add('show');
-            }
-            await autoDetectLocation();
-        };
-
-        function closeStartupModal() {
-            if (document.getElementById('dontShowAgain').checked) { localStorage.setItem('hideStartupModal', 'true'); }
-            document.getElementById('startupModal').classList.remove('show');
-        }
-
-        function openQRModal() {
-            const url = window.location.origin + window.location.pathname; 
-            document.getElementById('qrcode').innerHTML = ""; 
-            new QRCode(document.getElementById("qrcode"), { text: url, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
-            document.getElementById('qrModal').classList.add('show');
-            showToast("QR Code generated.", "info");
-        }
-        function closeQRModal(e) { if(e.target.id === 'qrModal') document.getElementById('qrModal').classList.remove('show'); }
-
-        // --- STATS COUNTERS ---
-        function updateCounters() {
-            const startStr = document.getElementById('schoolStart').value;
-            const endStr = document.getElementById('schoolEnd').value;
-            if(!startStr || !endStr) return;
-
-            let todayDt = new Date(); todayDt.setHours(0,0,0,0);
-            let calcStartDt = parseDateString(startStr); calcStartDt.setHours(0,0,0,0);
-            if (todayDt > calcStartDt) calcStartDt = todayDt;
-            
-            let endDt = parseDateString(endStr); endDt.setHours(0,0,0,0);
-
-            let totalDaysLeft = 0; let schoolDaysLeft = 0;
-
-            if (calcStartDt <= endDt) {
-                let holidaySet = new Set();
-                publicHolidays.forEach(h => holidaySet.add(h.date));
-                state.customHolidays.forEach(h => {
-                    let curr = parseDateString(h.start); let eDt = parseDateString(h.end);
-                    while(curr <= eDt) { holidaySet.add(formatDateString(curr)); curr.setDate(curr.getDate()+1); }
-                });
-
-                let curr = new Date(calcStartDt);
-                while(curr <= endDt) {
-                    totalDaysLeft++;
-                    let iso = formatDateString(curr);
-                    let dow = curr.getDay();
-                    if(dow !== 0 && dow !== 6 && !holidaySet.has(iso)) schoolDaysLeft++;
-                    curr.setDate(curr.getDate() + 1);
-                }
-            }
-
-            let plannedSickDaysLeft = 0;
-            sickBlocks.forEach(sb => {
-                let bStart = parseDateString(sb.start); bStart.setHours(0,0,0,0);
-                let bEnd = parseDateString(sb.end); bEnd.setHours(0,0,0,0);
-                let bCurr = new Date(bStart);
-                while(bCurr <= bEnd) {
-                    if (bCurr >= calcStartDt && bCurr <= endDt) {
-                        let iso = formatDateString(bCurr);
-                        let dow = bCurr.getDay();
-                        let isHol = publicHolidays.some(h => h.date === iso) || state.customHolidays.some(h => { let ct = bCurr.getTime(); return ct >= parseDateString(h.start).getTime() && ct <= parseDateString(h.end).getTime(); });
-                        if(dow !== 0 && dow !== 6 && !isHol) plannedSickDaysLeft++;
-                    }
-                    bCurr.setDate(bCurr.getDate() + 1);
-                }
-            });
-
-            let attendingDaysLeft = Math.max(0, schoolDaysLeft - plannedSickDaysLeft);
-
-            document.getElementById('statTotalDays').innerText = totalDaysLeft;
-            document.getElementById('statSchoolDays').innerText = schoolDaysLeft;
-            document.getElementById('statAttendingDays').innerText = attendingDaysLeft;
-        }
-
-        // --- GENDER UI ---
-        let currentGender = "Male";
-        function setGender(gender) {
-            if (currentGender === gender) return;
-            currentGender = gender;
-            const lbl = document.getElementById("genderLabel");
-            const btnM = document.getElementById("btnMale");
-            const btnF = document.getElementById("btnFemale");
-            const f = document.getElementById('border-flash'); 
-            
-            f.className = ''; void f.offsetWidth;
-
-            if(gender === "Male") {
-                lbl.style.color = "var(--anim-male)"; btnM.classList.add("active-male"); btnF.classList.remove("active-female"); f.classList.add('flash-male');
-                showToast("Removed Female-specific options:<br>• Menstrual Pain<br>• Heavy Flow & Fatigue<br>• Premenstrual Fatigue", "male");
-            } else {
-                lbl.style.color = "var(--anim-female)"; btnF.classList.add("active-female"); btnM.classList.remove("active-male"); f.classList.add('flash-female');
-                showToast("Unlocked Female-specific options:<br>• Menstrual Pain<br>• Heavy Flow & Fatigue<br>• Premenstrual Fatigue", "female");
-            }
-            renderIllnessConfig(); updateCounters();
-        }
-
-        // --- DUAL SLIDER LOGIC ---
-        function updateDualSlider(e, minId, maxId, fillId, textId) {
-            let minNode = document.getElementById(minId); let maxNode = document.getElementById(maxId);
-            let minVal = parseInt(minNode.value); let maxVal = parseInt(maxNode.value);
-            
-            if (minVal >= maxVal) {
-                if (e && e.target === minNode) { minNode.value = maxVal - 1; minVal = maxVal - 1; }
-                else { maxNode.value = minVal + 1; maxVal = minVal + 1; }
-            }
-            document.getElementById(textId).innerText = `${minVal} - ${maxVal}`;
-            
-            let range = maxNode.max - minNode.min;
-            let percent1 = ((minVal - minNode.min) / range) * 100;
-            let percent2 = ((maxVal - minNode.min) / range) * 100;
-            
-            const fill = document.getElementById(fillId);
-            fill.style.left = percent1 + "%";
-            fill.style.width = (percent2 - percent1) + "%";
-        }
-        updateDualSlider(null, 'minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText');
-        updateDualSlider(null, 'custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText');
-
-        // --- GLOBAL DATA INJECTION & IP AUTO-DETECT ---
-        const globalCountries = [{n:"Australia",c:"AU"},{n:"Austria",c:"AT"},{n:"Belgium",c:"BE"},{n:"Brazil",c:"BR"},{n:"Canada",c:"CA"},{n:"China",c:"CN"},{n:"France",c:"FR"},{n:"Germany",c:"DE"},{n:"India",c:"IN"},{n:"Ireland",c:"IE"},{n:"Italy",c:"IT"},{n:"Japan",c:"JP"},{n:"Mexico",c:"MX"},{n:"Netherlands",c:"NL"},{n:"New Zealand",c:"NZ"},{n:"Palestine",c:"PS"},{n:"Poland",c:"PL"},{n:"Portugal",c:"PT"},{n:"Russia",c:"RU"},{n:"South Africa",c:"ZA"},{n:"South Korea",c:"KR"},{n:"Spain",c:"ES"},{n:"Sweden",c:"SE"},{n:"Switzerland",c:"CH"},{n:"Turkey",c:"TR"},{n:"United Kingdom",c:"GB"},{n:"United States",c:"US"}];
-        const dl = document.getElementById('countryList');
-        globalCountries.sort((a,b)=>a.n.localeCompare(b.n)).forEach(c => { let opt = document.createElement('option'); opt.value = c.n; dl.appendChild(opt); });
-
-        let currentCountryCode = null;
-
-        async function autoDetectLocation() {
-            try {
-                showToast("Detecting local region...", "info");
-                const res = await fetch('https://ipapi.co/json/');
-                const data = await res.json();
-                if (data.country_name) {
-                    document.getElementById('country').value = data.country_name;
-                    document.getElementById('country').dispatchEvent(new Event('change'));
-                    
-                    if (data.region) {
-                        setTimeout(() => {
-                            document.getElementById('state').value = data.region;
-                            document.getElementById('state').dispatchEvent(new Event('change'));
-                        }, 800);
-                    }
-                    showToast(`Location auto-detected: ${data.city || data.region}, ${data.country_name}`, "success");
-                }
-            } catch (e) {
-                // Fallback context based on instructions
-                document.getElementById('country').value = "Switzerland";
-                document.getElementById('country').dispatchEvent(new Event('change'));
-                showToast("Auto-detect failed. Defaulting to Switzerland.", "info");
-            }
-        }
-
-        document.getElementById('country').addEventListener('change', async (e) => {
-            const countryName = e.target.value;
-            const stateInput = document.getElementById('state');
-            const stateList = document.getElementById('stateList');
-            stateInput.value = ''; stateList.innerHTML = '';
-            
-            try {
-                const res = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country: countryName })
-                });
-                const data = await res.json();
-                if (data && data.data && data.data.states) {
-                    data.data.states.forEach(s => { let opt = document.createElement('option'); opt.value = s.name; stateList.appendChild(opt); });
-                }
-            } catch(err) { }
-            
-            let codeObj = globalCountries.find(c => c.n.toLowerCase() === countryName.toLowerCase());
-            if(codeObj) { currentCountryCode = codeObj.c; fetchHolidays(); }
-            else { currentCountryCode = null; publicHolidays = []; calendar.refetchEvents(); updateCounters(); }
-        });
-
-        document.getElementById('state').addEventListener('change', fetchHolidays);
-
-        async function fetchHolidays() {
-            if(!currentCountryCode) return;
-            try {
-                const year = new Date(document.getElementById('schoolStart').value).getFullYear();
-                const hRes = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${currentCountryCode}`);
-                if(hRes.ok) { 
-                    const allHols = await hRes.json();
-                    const stateTyped = document.getElementById('state').value.toLowerCase();
-                    
-                    publicHolidays = allHols.filter(h => {
-                        if(!stateTyped) return true; 
-                        if(!h.counties) return true; 
-                        return h.counties.some(c => c.toLowerCase().includes(stateTyped) || stateTyped.includes(c.toLowerCase().split('-')[1]));
-                    }).map(h => ({ name: h.name, date: h.date }));
-                    
-                    calendar.refetchEvents(); updateCounters();
-                    showToast(`Public holidays updated for ${stateTyped || currentCountryCode}.`, "info");
-                }
-            } catch(e) {}
-        }
-
-        // --- DATA ---
         const DEFAULT_SYMPTOMS = {
-            "Migraine": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["with light sensitivity", "with severe nausea"] },
-            "Food Poisoning": { min: 1, max: 3, seasons: [6,7,8,9], is_period: false, modifiers: ["with mild dehydration", "sharp stomach cramps"] },
-            "Stomach Bug": { min: 2, max: 4, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["with vomiting", "mild fever"] },
-            "Severe Cold": { min: 2, max: 5, seasons: [9,10,11,12,1,2,3], is_period: false, modifiers: ["with dry cough", "sinus pressure"] },
-            "Influenza (Flu)": { min: 4, max: 7, seasons: [11,12,1,2,3], is_period: false, modifiers: ["high fever", "body aches"] },
-            "Sprained Ankle": { min: 3, max: 7, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["requiring rest", "swelling"] },
-            "Menstrual Pain (Dysmenorrhea)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["severe cramping", "bed rest"] },
-            "Heavy Flow & Fatigue": { min: 1, max: 3, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["extreme exhaustion", "severe dizziness"] },
-            "Premenstrual Fatigue (PMS)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["nausea", "mood fatigue"] }
+            "Migraine": { min: 1, max: 2, weight: 8, color: "#8e44ad", is_period: false, modifiers: ["with aura", "severe nausea"] },
+            "Food Poisoning": { min: 1, max: 2, weight: 6, color: "#27ae60", is_period: false, modifiers: ["mild dehydration"] },
+            "Stomach Bug": { min: 1, max: 3, weight: 7, color: "#d35400", is_period: false, modifiers: ["vomiting"] },
+            "Mental Health Day": { min: 1, max: 1, weight: 4, color: "#2980b9", is_period: false, modifiers: ["burnout"] },
+            "Severe Allergies": { min: 1, max: 2, weight: 5, color: "#f39c12", is_period: false, modifiers: ["sinus pressure"] },
+            "Pink Eye": { min: 2, max: 4, weight: 3, color: "#c0392b", is_period: false, modifiers: ["highly contagious"] },
+            "Menstrual Cramps": { min: 1, max: 2, weight: 9, color: "#ff69b4", gender: "Female", is_period: true, modifiers: ["severe"] },
+            "Heavy Flow/Fatigue": { min: 1, max: 2, weight: 7, color: "#fd79a8", gender: "Female", is_period: true, modifiers: ["anemia symptoms"] },
+            "UTI": { min: 1, max: 3, weight: 4, color: "#d63031", gender: "Female", is_period: false, modifiers: ["antibiotics needed"] }
         };
 
-        let state = { allSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), activeSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), customHolidays: [] };
-        let sickBlocks = []; let publicHolidays = []; let calendar;
+        let state = {
+            allSym: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)),
+            actSym: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)),
+            customBlacklist: [], lockedDates: {}, blocks: []
+        };
+        
+        let pubHolidays = []; let calendar; let chartInst = null;
+        let historyStack = []; let historyIdx = -1;
 
-        // --- RESIZE & TAB LOGIC ---
-        const resizer = document.getElementById('resizer'); const sidebar = document.getElementById('sidebar'); let isResizing = false;
-        
-        resizer.addEventListener('mousedown', (e) => { 
-            isResizing = true; 
-            document.body.style.cursor = 'col-resize'; 
-            document.body.style.userSelect = 'none'; 
-            sidebar.style.transition = 'none'; 
-            resizer.classList.add('active');
-        });
-        
-        document.addEventListener('mousemove', (e) => { 
-            if (isResizing && e.clientX > 280 && e.clientX < window.innerWidth - 300) { sidebar.style.width = e.clientX + 'px'; }
-        });
-        
-        document.addEventListener('mouseup', () => { 
-            if(isResizing) {
-                isResizing = false; 
-                document.body.style.cursor = 'default'; 
-                document.body.style.userSelect = 'auto';
-                sidebar.style.transition = 'transform 0.3s ease'; 
-                resizer.classList.remove('active'); 
-                if (calendar) calendar.render(); 
+        // --- INIT & PERSISTENCE ---
+        window.onload = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('data')) {
+                try {
+                    let decoded = JSON.parse(atob(urlParams.get('data')));
+                    state = decoded.state; currentGender = decoded.gender;
+                    document.getElementById('schoolStart').value = decoded.start;
+                    document.getElementById('schoolEnd').value = decoded.end;
+                    showToast("Loaded Shared Schedule!", "success");
+                } catch(e) { showToast("Invalid share link.", "error"); }
+                window.history.replaceState({}, document.title, window.location.pathname); // clear URL
+            } else {
+                loadState();
             }
-        });
-        
-        function toggleSidebar() { sidebar.classList.toggle('open'); if (calendar) setTimeout(() => calendar.render(), 300); }
-        function switchTab(tabId) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active'); document.getElementById('tab-' + tabId).classList.add('active'); if(tabId === 'cal') calendar.render(); }
 
-        // --- INIT ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const t = new Date(); document.getElementById('schoolStart').valueAsDate = t;
-            const n = new Date(); n.setFullYear(t.getFullYear() + 1); document.getElementById('schoolEnd').valueAsDate = n;
-            initCalendar(); renderIllnessConfig(); updateCounters();
+            if(!document.getElementById('schoolStart').value) {
+                let t = new Date(); document.getElementById('schoolStart').valueAsDate = t;
+                let n = new Date(); n.setFullYear(t.getFullYear() + 1); document.getElementById('schoolEnd').valueAsDate = n;
+            }
+
+            if(localStorage.getItem('hideStartupModal') !== 'true') openModal('startupModal');
+            
+            initCalendar(); setGender(currentGender); updateDash();
+            if(globalCountries.length === 0) populateCountries();
+            if(!urlParams.has('data')) autoDetectLocation();
+            
+            pushHistory(); // Initial state
+        };
+
+        function saveState() {
+            localStorage.setItem('schedulerProState', JSON.stringify({
+                gender: currentGender, state: state,
+                start: document.getElementById('schoolStart').value, end: document.getElementById('schoolEnd').value,
+                target: document.getElementById('targetDays').value, gap: document.getElementById('minGap').value,
+                docLimit: document.getElementById('docNoteLimit').value,
+                wknd: document.getElementById('weekendType').value,
+                lastP: document.getElementById('lastPeriod').value, cycle: document.getElementById('cycleLength').value
+            }));
+        }
+
+        function loadState() {
+            let saved = localStorage.getItem('schedulerProState');
+            if(saved) {
+                let d = JSON.parse(saved);
+                currentGender = d.gender || "Male"; state = d.state || state;
+                if(d.start) document.getElementById('schoolStart').value = d.start;
+                if(d.end) document.getElementById('schoolEnd').value = d.end;
+                if(d.target) { document.getElementById('targetDays').value = d.target; document.getElementById('targetValText').innerText=d.target; }
+                if(d.gap) document.getElementById('minGap').value = d.gap;
+                if(d.docLimit) { document.getElementById('docNoteLimit').value = d.docLimit; document.getElementById('docValText').innerText=d.docLimit; }
+                if(d.wknd) document.getElementById('weekendType').value = d.wknd;
+                if(d.lastP) document.getElementById('lastPeriod').value = d.lastP;
+                if(d.cycle) document.getElementById('cycleLength').value = d.cycle;
+            }
+        }
+
+        function pushHistory() {
+            historyStack = historyStack.slice(0, historyIdx + 1);
+            historyStack.push(JSON.parse(JSON.stringify(state)));
+            historyIdx++;
+        }
+        function undo() { if(historyIdx > 0) { historyIdx--; state = JSON.parse(JSON.stringify(historyStack[historyIdx])); refreshAll(); showToast("Undo successful."); } }
+        function redo() { if(historyIdx < historyStack.length - 1) { historyIdx++; state = JSON.parse(JSON.stringify(historyStack[historyIdx])); refreshAll(); showToast("Redo successful."); } }
+        function refreshAll() { saveState(); renderIllnessConfig(); renderBlacklist(); calendar.refetchEvents(); updateDash(); }
+
+        // --- UI & MODALS ---
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
+        function closeModal(id) { 
+            if(id==='startupModal' && document.getElementById('dontShowAgain').checked) localStorage.setItem('hideStartupModal', 'true');
+            document.getElementById(id).classList.remove('show'); 
+        }
+        function closeOutside(e, id) { if(e.target.id === id) closeModal(id); }
+
+        function showToast(msg, type="info") {
+            const cont = document.getElementById('toastContainer');
+            const t = document.createElement('div'); t.className = `toast ${type}-toast`;
+            t.innerHTML = `<div class="toast-content"><span>${msg}</span><span style="cursor:pointer;font-size:1.5em;" onclick="this.parentElement.parentElement.remove()">×</span></div><div class="toast-progress"></div>`;
+            cont.appendChild(t);
+            let bar = t.querySelector('.toast-progress'); let time = 20000; let last = performance.now(); let hov = false;
+            t.onmouseenter = ()=>hov=true; t.onmouseleave = ()=>{hov=false;last=performance.now();};
+            function step(now) {
+                if(!hov) time -= (now-last); else time=20000; last=now;
+                bar.style.width = Math.max(0,(time/20000)*100)+"%";
+                if(time<=0) { t.style.opacity=0; setTimeout(()=>t.remove(),300); } else requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${id}')"]`).classList.add('active');
+            document.getElementById('tab-'+id).classList.add('active');
+            if(id==='cal') calendar.render();
+        }
+
+        // Swipe Gestures
+        let startX = 0;
+        document.getElementById('mainContent').addEventListener('touchstart', e => startX = e.changedTouches[0].screenX);
+        document.getElementById('mainContent').addEventListener('touchend', e => {
+            let diffX = e.changedTouches[0].screenX - startX;
+            let tabs = ['cal','sym','data'];
+            let curr = tabs.indexOf(document.querySelector('.tab-content.active').id.split('-')[1]);
+            if(diffX > 70 && curr > 0) switchTab(tabs[curr-1]);
+            if(diffX < -70 && curr < 2) switchTab(tabs[curr+1]);
         });
 
+        // Resizer
+        let isResizing=false; const rs=document.getElementById('resizer'); const sb=document.getElementById('sidebar');
+        rs.onmousedown=()=> {isResizing=true; document.body.style.userSelect='none'; sb.style.transition='none'; rs.classList.add('active');};
+        document.onmousemove=(e)=>{if(isResizing && e.clientX>250 && e.clientX<window.innerWidth-300) sb.style.width=e.clientX+'px';};
+        document.onmouseup=()=>{if(isResizing){isResizing=false;document.body.style.userSelect='auto';sb.style.transition='transform 0.3s';rs.classList.remove('active');calendar.render();}};
+
+        // Gender
+        let currentGender = "Male";
+        function setGender(g) {
+            currentGender = g;
+            document.getElementById('genderLabel').style.color = g==="Male" ? "var(--anim-male)" : "var(--anim-female)";
+            document.getElementById('btnMale').className = g==="Male" ? "gender-btn active-male" : "gender-btn";
+            document.getElementById('btnFemale').className = g==="Female" ? "gender-btn active-female" : "gender-btn";
+            document.getElementById('periodTrackerUI').style.display = g==="Female" ? "block" : "none";
+            const f = document.getElementById('border-flash'); f.className=''; void f.offsetWidth; f.classList.add(g==="Male"?'flash-male':'flash-female');
+            renderIllnessConfig(); saveState();
+        }
+
+        // --- CALENDAR & LOCKING ---
         function initCalendar() {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView: 'dayGridMonth', height: 'auto', firstDay: 1, showNonCurrentDates: false, fixedWeekCount: false,
                 headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+                dateClick: function(info) {
+                    let dStr = info.dateStr;
+                    if(isWeekend(dStr)) return showToast("Cannot lock weekends.", "error");
+                    
+                    // Toggle Lock -> Blacklist -> Clear
+                    if(!state.lockedDates[dStr] && !state.customBlacklist.some(b=>b.start<=dStr && b.end>=dStr)) {
+                        state.lockedDates[dStr] = "Locked Day"; showToast("Day Locked.");
+                    } else if (state.lockedDates[dStr]) {
+                        delete state.lockedDates[dStr];
+                        state.customBlacklist.push({name:"Blacklist", start:dStr, end:dStr}); showToast("Day Blacklisted.");
+                    } else {
+                        state.customBlacklist = state.customBlacklist.filter(b=> !(b.start<=dStr && b.end>=dStr)); showToast("Day Cleared.");
+                    }
+                    pushHistory(); refreshAll();
+                },
                 events: (info, success) => {
-                    let evs = [{ daysOfWeek: [0, 6], display: 'background', color: 'var(--weekend-bg)' }];
-                    publicHolidays.forEach(h => evs.push({ title: h.name, start: h.date, allDay: true, color: '#ffc107', textColor: '#000' }));
-                    state.customHolidays.forEach(h => {
-                        let eD = parseDateString(h.end); eD.setDate(eD.getDate() + 1);
-                        evs.push({ title: h.name, start: h.start, end: formatDateString(eD), color: '#17a2b8', textColor: '#fff' });
-                    });
-                    sickBlocks.forEach(sb => {
-                        let eD = parseDateString(sb.end); eD.setDate(eD.getDate() + 1);
-                        evs.push({ title: `${sb.reason} (${sb.missed}d)`, start: sb.start, end: formatDateString(eD), color: 'var(--primary)', textColor: '#fff' });
+                    let evs = [];
+                    getWeekends().forEach(w => evs.push({ daysOfWeek: [w], display: 'background', color: 'var(--weekend-bg)' }));
+                    pubHolidays.forEach(h => evs.push({ title: h.name, start: h.date, allDay: true, color: '#ffc107', textColor: '#000' }));
+                    state.customBlacklist.forEach(h => { let eD=sDate(h.end); eD.setDate(eD.getDate()+1); evs.push({ title: "🚫 "+h.name, start: h.start, end: fDate(eD), classNames: ['blacklisted-day']}); });
+                    for(const [d, reason] of Object.entries(state.lockedDates)) { evs.push({ title: "🔒 "+reason, start: d, allDay:true, classNames: ['locked-day'] }); }
+                    state.blocks.forEach(sb => {
+                        let eD=sDate(sb.end); eD.setDate(eD.getDate()+1);
+                        let title = sb.missed % 1 !== 0 ? `🌗 ${sb.reason}` : sb.reason;
+                        evs.push({ title: title, start: sb.start, end: fDate(eD), color: sb.color, textColor: '#fff' });
                     });
                     success(evs);
                 }
@@ -634,191 +457,221 @@
             calendar.render();
         }
 
-        function renderIllnessConfig() {
-            const container = document.getElementById('illness-list'); container.innerHTML = '<h3 style="color:var(--primary); margin-top:0;">Active Roster</h3>';
-            for (let name in state.allSymptoms) {
-                const d = state.allSymptoms[name]; if (currentGender === "Male" && d.gender === "Female") continue;
-                const active = state.activeSymptoms.hasOwnProperty(name);
-                let html = `<div class="card"><label style="margin:0; font-size:1em; text-transform:none; letter-spacing:0; color:white;"><input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${active?'checked':''}> ${name} <span style="font-size:0.8em; color:#888;">(${d.min}-${d.max}d)</span></label>`;
-                if (active && d.modifiers && d.modifiers.length > 0) {
-                    html += `<div class="mod-grid" style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px;">`;
-                    d.modifiers.forEach(m => html += `<label style="font-weight:normal; font-size:0.85em; text-transform:none;"><input type="checkbox" onchange="toggleMod('${name}','${m}',this.checked)" ${state.activeSymptoms[name].modifiers.includes(m)?'checked':''}> ${m}</label>`);
-                    html += `</div>`;
-                }
-                container.insertAdjacentHTML('beforeend', html + `</div>`);
-            }
+        // --- DASHBOARD & ANALYTICS ---
+        function updateDash() {
+            let st = sDate(document.getElementById('schoolStart').value); let en = sDate(document.getElementById('schoolEnd').value);
+            let totalSch = 0; let c = new Date(st);
+            let blkSet = new Set(); pubHolidays.forEach(h=>blkSet.add(h.date)); state.customBlacklist.forEach(h=>{let t=sDate(h.start); let e=sDate(h.end); while(t<=e){blkSet.add(fDate(t));t.setDate(t.getDate()+1);}});
+            while(c<=en) { if(!isWeekend(fDate(c)) && !blkSet.has(fDate(c))) totalSch++; c.setDate(c.getDate()+1); }
+            
+            let missed = state.blocks.reduce((sum, b) => sum + b.missed, 0);
+            let docs = state.blocks.filter(b => b.missed >= parseInt(document.getElementById('docNoteLimit').value)).length;
+            
+            // Believability Math
+            let score = 100;
+            let mFCount = 0;
+            state.blocks.forEach(b => {
+                let d = sDate(b.start).getDay(); if(d===1 || d===5) mFCount++;
+                if(b.missed > 3) score -= 5; 
+            });
+            if(state.blocks.length>0 && (mFCount/state.blocks.length) > 0.4) score -= 15; // Too many long weekends
+            if(docs > 2) score -= 10;
+            score = Math.max(0, score);
+
+            document.getElementById('statDays').innerText = totalSch;
+            document.getElementById('statMissed').innerText = missed;
+            document.getElementById('statScore').innerText = score + '%';
+            document.getElementById('statDocs').innerText = docs;
+
+            renderChart();
         }
 
-        function toggleIllness(n, c) { if(c) state.activeSymptoms[n] = JSON.parse(JSON.stringify(state.allSymptoms[n])); else delete state.activeSymptoms[n]; renderIllnessConfig(); updateCounters(); showToast(`Toggled ${n}`, "info"); }
-        function toggleMod(n, m, c) { let mods = state.activeSymptoms[n].modifiers; if(c && !mods.includes(m)) mods.push(m); else if(!c) state.activeSymptoms[n].modifiers = mods.filter(x => x !== m); }
+        function renderChart() {
+            if(state.blocks.length === 0) { document.getElementById('chartContainer').style.display='none'; return; }
+            document.getElementById('chartContainer').style.display='block';
+            let counts = {}; let colors = [];
+            state.blocks.forEach(b => { let n=b.reason.split(' ')[0]; counts[n]=(counts[n]||0)+1; });
+            Object.keys(counts).forEach(k => { let sym=Object.keys(state.actSym).find(s=>k.includes(s)); colors.push(sym ? state.actSym[sym].color : '#ff4b4b'); });
+            
+            if(chartInst) chartInst.destroy();
+            const ctx = document.getElementById('excuseChart').getContext('2d');
+            chartInst = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: colors, borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: {color:'#fff'} } } }
+            });
+        }
+
+        // --- EXCUSE CONFIG ---
+        function renderIllnessConfig() {
+            const cont = document.getElementById('illness-list'); cont.innerHTML = '';
+            for (let name in state.allSym) {
+                const d = state.allSym[name]; if (currentGender === "Male" && d.gender === "Female") continue;
+                const act = state.actSym.hasOwnProperty(name);
+                let h = `<div class="card" style="border-left: 4px solid ${d.color}"><label style="margin:0;color:#fff;text-transform:none;"><input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${act?'checked':''}> ${name} <span style="color:#aaa;">(${d.min}-${d.max}d) [Wt: ${d.weight}]</span></label>`;
+                if (act && d.modifiers && d.modifiers.length) {
+                    h += `<div class="mod-grid" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">`;
+                    d.modifiers.forEach(m => h += `<label style="font-weight:normal; text-transform:none;"><input type="checkbox" onchange="toggleMod('${name}','${m}',this.checked)" ${state.actSym[name].modifiers.includes(m)?'checked':''}> ${m}</label>`);
+                    h += `</div>`;
+                }
+                cont.insertAdjacentHTML('beforeend', h + `</div>`);
+            }
+        }
+        function toggleIllness(n, c) { if(c) state.actSym[n] = JSON.parse(JSON.stringify(state.allSym[n])); else delete state.actSym[n]; pushHistory(); saveState(); renderIllnessConfig(); }
+        function toggleMod(n, m, c) { let mods = state.actSym[n].modifiers; if(c && !mods.includes(m)) mods.push(m); else if(!c) state.actSym[n].modifiers = mods.filter(x => x !== m); pushHistory(); saveState(); }
 
         function addCustomExcuse() {
-            const name = document.getElementById('custName').value.trim();
-            const min = parseInt(document.getElementById('custMin').value);
-            const max = parseInt(document.getElementById('custMax').value);
-            if (!name) return showToast("Please enter an excuse name.", "error");
-            
-            const newEx = { min, max, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: [] };
-            state.allSymptoms[name] = newEx; state.activeSymptoms[name] = JSON.parse(JSON.stringify(newEx));
-            document.getElementById('custName').value = ''; renderIllnessConfig();
-            showToast(`Added custom excuse: ${name}`, "success");
+            const n = document.getElementById('custName').value.trim(); const c = document.getElementById('custColor').value;
+            const w = parseInt(document.getElementById('custWeight').value); const dStr = document.getElementById('custDays').value.split('-');
+            if (!n || dStr.length !== 2) return showToast("Invalid inputs.", "error");
+            const newEx = { min: parseInt(dStr[0]), max: parseInt(dStr[1]), weight: w, color: c, is_period: false, modifiers: [] };
+            state.allSym[n] = newEx; state.actSym[n] = JSON.parse(JSON.stringify(newEx));
+            document.getElementById('custName').value = ''; pushHistory(); saveState(); renderIllnessConfig(); showToast(`Added ${n}`);
         }
 
-        function addCustomHoliday() {
+        // --- BLACKLIST ---
+        function addBlacklist() {
             const n = document.getElementById('holName').value; const s = document.getElementById('holStart').value; const e = document.getElementById('holEnd').value;
-            if(!n || !s || !e) return showToast("Fill all holiday fields.", "error"); 
-            state.customHolidays.push({name:n, start:s, end:e});
-            document.getElementById('holName').value = ''; renderHolidaysTable(); calendar.refetchEvents(); updateCounters();
-            showToast(`Added Custom Holiday: ${n}`, "success");
+            if(!n || !s || !e) return; state.customBlacklist.push({name:n, start:s, end:e});
+            document.getElementById('holName').value=''; pushHistory(); refreshAll();
         }
-        function renderHolidaysTable() {
+        function renderBlacklist() {
             const b = document.querySelector('#holiday-table tbody'); b.innerHTML = '';
-            state.customHolidays.forEach(h => b.insertAdjacentHTML('beforeend', `<tr><td>${h.name}</td><td>${h.start}</td><td>${h.end}</td></tr>`));
+            state.customBlacklist.forEach(h => b.insertAdjacentHTML('beforeend', `<tr><td>${h.name}</td><td>${h.start}</td><td>${h.end}</td></tr>`));
         }
 
-        // --- ASYNC GENERATOR (With Progress Bar) ---
-        async function triggerGeneration() {
-            const overlay = document.getElementById('loadingOverlay');
-            const progressFill = document.getElementById('genProgressFill');
-            const progressText = document.getElementById('genProgressText');
-            
-            overlay.style.display = 'flex';
-            progressFill.style.width = '0%';
-            progressText.innerText = 'Calculating valid dates...';
-            
-            if(window.innerWidth <= 768) toggleSidebar();
-            
-            // Allow DOM to update overlay before heavy lifting
-            await new Promise(r => setTimeout(r, 50)); 
-            
-            await generateStrategyAsync(progressFill, progressText);
-            
-            setTimeout(() => { overlay.style.display = 'none'; }, 500);
-        }
-
-        async function generateStrategyAsync(progressFill, progressText) {
-            sickBlocks = []; 
-            const startStr = document.getElementById('schoolStart').value; 
-            const endStr = document.getElementById('schoolEnd').value;
-            const target = parseInt(document.getElementById('targetDays').value); 
-            const minB = parseInt(document.getElementById('minBlock').value); 
-            const maxB = parseInt(document.getElementById('maxBlock').value);
-            const gap = parseInt(document.getElementById('minGap').value);
-
-            let holidaySet = new Set();
-            publicHolidays.forEach(h => holidaySet.add(h.date));
-            state.customHolidays.forEach(h => {
-                let curr = parseDateString(h.start); let eDt = parseDateString(h.end);
-                while(curr <= eDt) { holidaySet.add(formatDateString(curr)); curr.setDate(curr.getDate()+1); }
-            });
-
-            let validDays = [];
-            let curr = parseDateString(startStr);
-            let endDt = parseDateString(endStr);
-            
-            while(curr <= endDt) {
-                let iso = formatDateString(curr);
-                let dow = curr.getDay();
-                if(dow !== 0 && dow !== 6 && !holidaySet.has(iso)) validDays.push(iso);
-                curr.setDate(curr.getDate() + 1);
-            }
-
-            if(validDays.length < target) {
-                showToast(`Error: Only ${validDays.length} valid school days available, but target is ${target}.`, "error");
-                updateCounters(); return;
-            }
-
-            let pool = validDays.slice();
-            let missed = 0; 
-            let attempts = 0;
-            const MAX_ATTEMPTS = 500; 
-
-            progressText.innerText = 'Placing schedule blocks...';
-
-            while(missed < target && pool.length > 0 && attempts < MAX_ATTEMPTS) {
-                attempts++; 
-                
-                // Update Progress UI every 10 attempts
-                if (attempts % 10 === 0) {
-                    progressFill.style.width = Math.min(100, (missed / target) * 100) + '%';
-                    await new Promise(r => setTimeout(r, 10)); // Yield thread to browser
-                }
-                
-                let sStr = pool[Math.floor(Math.random() * pool.length)]; 
-                let dur = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
-                
-                let daysToTake = [];
-                for(let i=0; i<dur; i++) {
-                    let tDt = parseDateString(sStr);
-                    tDt.setDate(tDt.getDate() + i);
-                    let tStr = formatDateString(tDt);
-                    if(validDays.includes(tStr)) daysToTake.push(tStr);
-                }
-                
-                if (daysToTake.length === 0) { pool = pool.filter(p => p !== sStr); continue; }
-
-                if (missed + daysToTake.length > target) {
-                    daysToTake = daysToTake.slice(0, target - missed);
-                    dur = daysToTake.length;
-                }
-                
-                let bMissed = daysToTake.length; 
-                let eStr = daysToTake[daysToTake.length - 1];
-
-                let gapFail = sickBlocks.some(b => { 
-                    let d1 = Math.abs(parseDateString(sStr) - parseDateString(b.end)) / 864e5; 
-                    let d2 = Math.abs(parseDateString(eStr) - parseDateString(b.start)) / 864e5; 
-                    return d1 < gap || d2 < gap; 
-                });
-                if(gapFail) { pool = pool.filter(p => p !== sStr); continue; }
-
-                let validIllnesses = Object.keys(state.activeSymptoms).filter(k => {
-                    let s = state.activeSymptoms[k]; if(s.gender && s.gender !== currentGender) return false;
-                    if(s.min > dur || s.max < dur) return false;
-                    if(s.is_period) return !sickBlocks.some(b => b.is_period && Math.abs((parseDateString(sStr)-parseDateString(b.start))/864e5) < 26);
-                    return true;
-                });
-                if(!validIllnesses.length) { pool = pool.filter(p => p !== sStr); continue; }
-                
-                let cN = validIllnesses[Math.floor(Math.random()*validIllnesses.length)]; 
-                let cD = state.activeSymptoms[cN];
-                let rS = cN + (cD.modifiers && cD.modifiers.length && Math.random()>0.3 ? " " + cD.modifiers[Math.floor(Math.random()*cD.modifiers.length)] : "");
-                
-                sickBlocks.push({start:sStr, end:eStr, reason:rS, missed:bMissed, is_period:cD.is_period});
-                missed += bMissed;
-                daysToTake.forEach(d => { pool = pool.filter(p => p !== d); });
-            }
-            
-            progressFill.style.width = '100%';
-            
-            if (missed < target) { showToast(`Warning: Constraints tight. Placed ${missed}/${target} days.`, "error"); } 
-            else { showToast(`Successfully generated ${missed} days off!`, "success"); switchTab('cal'); }
-            
-            calendar.refetchEvents(); updateCounters();
-        }
-
-        function exportSettings() {
-            const d = { target: document.getElementById('targetDays').value, state };
-            const s = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(d));
-            const n = document.createElement('a'); n.setAttribute("href", s); n.setAttribute("download", "settings.json"); n.click();
-            showToast("Settings Exported!");
-        }
-        function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); updateCounters(); showToast("Schedule Cleared.", "info");}
+        // --- LOCATION AUTO-DETECT ---
+        const globalCountries = [{n:"Australia",c:"AU"},{n:"Canada",c:"CA"},{n:"Germany",c:"DE"},{n:"Switzerland",c:"CH"},{n:"United Kingdom",c:"GB"},{n:"United States",c:"US"}]; // Truncated for token limit, APIs handle rest
+        function populateCountries() { const dl = document.getElementById('countryList'); globalCountries.forEach(c => { let opt = document.createElement('option'); opt.value = c.n; dl.appendChild(opt); }); }
         
-        document.getElementById('importFile').addEventListener('change', function(e) {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if(data.target) { document.getElementById('targetDays').value = data.target; document.getElementById('targetValText').innerText = data.target; }
-                    if (data.state) { state = data.state; }
-                    renderIllnessConfig(); renderHolidaysTable(); calendar.refetchEvents(); updateCounters();
-                    showToast("Settings imported successfully!", "success");
-                } catch (err) { showToast("Invalid JSON file.", "error"); }
-            };
-            reader.readAsText(file);
-        });
+        async function autoDetectLocation() {
+            try {
+                let res = await fetch('https://ipapi.co/json/'); let data = await res.json();
+                if (data.country_name) {
+                    document.getElementById('country').value = data.country_name;
+                    if(data.region) setTimeout(() => document.getElementById('state').value = data.region, 500);
+                    showToast(`Region detected: ${data.country_name}`, "success");
+                    fetchHolidays(data.country_code);
+                }
+            } catch (e) { document.getElementById('country').value = "Switzerland"; fetchHolidays("CH"); }
+        }
+
+        async function fetchHolidays(cc) {
+            if(!cc) return;
+            try {
+                const year = sDate(document.getElementById('schoolStart').value).getFullYear();
+                const hRes = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${cc}`);
+                if(hRes.ok) { pubHolidays = (await hRes.json()).map(h => ({ name: h.name, date: h.date })); calendar.refetchEvents(); updateDash(); }
+            } catch(e) {}
+        }
+
+        // --- SMART GENERATOR ---
+        function generateStrategy() {
+            state.blocks = []; 
+            const tgt = parseFloat(document.getElementById('targetDays').value); 
+            const gap = parseInt(document.getElementById('minGap').value);
+            const allowHalf = document.getElementById('allowHalf').value === 'yes';
+            
+            // Period Logic
+            const lastP = document.getElementById('lastPeriod').value ? sDate(document.getElementById('lastPeriod').value) : null;
+            const cyc = parseInt(document.getElementById('cycleLength').value);
+
+            let blkSet = new Set(); pubHolidays.forEach(h=>blkSet.add(h.date)); state.customBlacklist.forEach(h=>{let t=sDate(h.start); let e=sDate(h.end); while(t<=e){blkSet.add(fDate(t));t.setDate(t.getDate()+1);}});
+            let valid = []; let c=sDate(document.getElementById('schoolStart').value); let en=sDate(document.getElementById('schoolEnd').value);
+            while(c<=en) { let iso=fDate(c); if(!isWeekend(iso) && !blkSet.has(iso) && !state.lockedDates[iso]) valid.push(iso); c.setDate(c.getDate()+1); }
+
+            let pool = valid.slice(); let missed = 0; let att = 0; let lastSym = "";
+
+            // Inject Locked Dates first
+            for(const [dStr, reason] of Object.entries(state.lockedDates)) {
+                if(missed >= tgt) break;
+                state.blocks.push({start:dStr, end:dStr, reason:reason.replace('Locked Day','Personal'), missed:1, color:"#555"});
+                missed += 1; pool = pool.filter(p=>p!==dStr);
+            }
+
+            while(missed < tgt && pool.length > 0 && att < 1000) {
+                att++; 
+                let sStr = pool[Math.floor(Math.random() * pool.length)]; 
+                
+                // Weight Logic
+                let symArr = [];
+                Object.keys(state.actSym).forEach(k => {
+                    let s = state.actSym[k]; if(s.gender && s.gender !== currentGender) return;
+                    if(k === lastSym) return; // Prevent back-to-back
+                    
+                    if(s.is_period && lastP) {
+                        let daysSince = Math.abs(sDate(sStr) - lastP) / 864e5;
+                        let cycleRem = daysSince % cyc;
+                        if(cycleRem > 4 && cycleRem < (cyc - 4)) return; // Only allow +/- 4 days from expected period
+                    }
+                    for(let w=0; w<s.weight; w++) symArr.push(k);
+                });
+                if(!symArr.length) { pool=pool.filter(p=>p!==sStr); continue; }
+
+                let cN = symArr[Math.floor(Math.random()*symArr.length)]; let cD = state.actSym[cN];
+                let dur = Math.floor(Math.random() * (cD.max - cD.min + 1)) + cD.min;
+                
+                // Half day logic
+                let isHalf = allowHalf && dur === 1 && Math.random() > 0.7;
+                
+                let toTake = [];
+                for(let i=0; i<dur; i++) {
+                    let t=sDate(sStr); t.setDate(t.getDate()+i); let tS=fDate(t);
+                    if(valid.includes(tS)) toTake.push(tS);
+                }
+                if(!toTake.length) { pool=pool.filter(p=>p!==sStr); continue; }
+
+                let bMiss = isHalf ? 0.5 : toTake.length;
+                if(missed + bMiss > tgt) { 
+                    if(isHalf) { /* fits */ }
+                    else if(missed + 1 <= tgt) { toTake=[toTake[0]]; bMiss=1; } 
+                    else continue; 
+                }
+
+                let gapF = state.blocks.some(b => (Math.abs(sDate(toTake[0])-sDate(b.end))/864e5)<gap || (Math.abs(sDate(toTake[toTake.length-1])-sDate(b.start))/864e5)<gap);
+                if(gapF) { pool=pool.filter(p=>p!==sStr); continue; }
+
+                let rS = cN + (cD.modifiers.length && Math.random()>0.4 ? " " + cD.modifiers[Math.floor(Math.random()*cD.modifiers.length)] : "");
+                state.blocks.push({start:toTake[0], end:toTake[toTake.length-1], reason:rS, missed:bMiss, is_period:cD.is_period, color: cD.color});
+                missed += bMiss; lastSym = cN;
+                toTake.forEach(d => pool=pool.filter(p=>p!==d));
+            }
+            
+            if (missed >= tgt * 0.9) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            else showToast(`Constraints too tight. Only placed ${missed}/${tgt}.`, "error");
+            
+            pushHistory(); refreshAll(); switchTab('cal');
+            if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('open');
+        }
+
+        // --- EXPORT & SHARE ---
+        function exportICS() {
+            if(!state.blocks.length) return showToast("No schedule to export.", "error");
+            let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//SchedulerPro//EN\n";
+            state.blocks.forEach(b => {
+                let s = b.start.replace(/-/g,''); let eDt = sDate(b.end); eDt.setDate(eDt.getDate()+1); let e = fDate(eDt).replace(/-/g,'');
+                ics += `BEGIN:VEVENT\nDTSTART;VALUE=DATE:${s}\nDTEND;VALUE=DATE:${e}\nSUMMARY:${b.missed===0.5?'Half Day: ':''}${b.reason}\nEND:VEVENT\n`;
+            });
+            ics += "END:VCALENDAR";
+            let n = document.createElement('a'); n.href = "data:text/calendar;charset=utf8," + escape(ics); n.download = "schedule.ics"; n.click(); showToast("ICS Exported!");
+        }
+
+        function shareLink() {
+            let enc = btoa(JSON.stringify({gender:currentGender, start:document.getElementById('schoolStart').value, end:document.getElementById('schoolEnd').value, state:state}));
+            let url = window.location.origin + window.location.pathname + "?data=" + enc;
+            document.getElementById('qrcode').innerHTML = ""; 
+            new QRCode(document.getElementById("qrcode"), { text: url, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff" });
+            openModal('qrModal');
+        }
+
+        function generateTextReport() {
+            let txt = "SCHEDULE SUMMARY\n\n";
+            state.blocks.sort((a,b)=>sDate(a.start)-sDate(b.start)).forEach(b => txt += `${b.start} to ${b.end}: ${b.reason} (${b.missed} days)\n`);
+            let n = document.createElement('a'); n.href = "data:text/plain;charset=utf-8," + encodeURIComponent(txt); n.download = "summary.txt"; n.click();
+        }
+
+        function clearSchedule() { state.blocks = []; pushHistory(); refreshAll(); showToast("Cleared."); }
+        function exportSettings() { let n=document.createElement('a'); n.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(state)); n.download="settings.json"; n.click(); }
     </script>
 </body>
 </html>
