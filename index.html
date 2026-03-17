@@ -5,160 +5,218 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Excuse Scheduler</title>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --sidebar-bg: #1e1e1e;
-            --border: #333333;
-            --primary: #ff4b4b;
-            --input-bg: #2c2c2c;
-            --anim-female: #ff69b4;
-            --anim-male: #1e90ff;
-            --card-bg: #242424;
+            --bg-color: #121212; --text-color: #e0e0e0; --sidebar-bg: #1e1e1e;
+            --border: #333333; --primary: #ff4b4b; --input-bg: #2c2c2c;
+            --anim-female: #ff69b4; --anim-male: #1e90ff; --card-bg: #242424;
+            --weekend-bg: rgba(46, 204, 113, 0.15); /* Softer green */
         }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { margin: 0; display: flex; background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; position: relative; }
         
-        /* Modal Overlay */
-        #startupModal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); z-index: 10000; display: flex; 
-            align-items: center; justify-content: center; backdrop-filter: blur(5px);
-        }
-        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; max-width: 500px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; transform: translateY(-20px); transition: transform 0.3s ease;}
+        .modal-overlay.show .modal-content { transform: translateY(0); }
         .modal-content h2 { color: var(--primary); margin-top: 0; }
-        .modal-content ul { padding-left: 20px; line-height: 1.6; }
+        .modal-content ul { padding-left: 20px; line-height: 1.6; color: #ccc;}
+        .close-modal-x { position: absolute; top: 15px; right: 20px; font-size: 1.5em; cursor: pointer; color: #888; transition: 0.2s; }
+        .close-modal-x:hover { color: white; }
 
-        #mobile-menu-btn { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; background: var(--sidebar-bg); color: var(--text-color); border: 1px solid var(--border); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 1.2em; }
-        .sidebar { width: 320px; min-width: 250px; background: var(--sidebar-bg); padding: 30px 20px 20px; overflow-y: auto; height: 100%; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid var(--border);}
+        /* Toasts */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--card-bg); border-left: 4px solid var(--primary); color: white; padding: 15px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateX(50px); transition: all 0.3s ease; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9em;}
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.female-toast { border-left-color: var(--anim-female); }
+        
+        #mobile-menu-btn { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; background: var(--sidebar-bg); color: var(--text-color); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 1.2em; transition: 0.2s; }
+        #mobile-menu-btn:hover { background: var(--input-bg); }
+        
+        .sidebar { width: 340px; min-width: 280px; background: var(--sidebar-bg); padding: 20px; overflow-y: auto; height: 100%; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid var(--border); transition: width 0.1s;}
         #close-sidebar-btn { display: none; }
         .resizer { width: 6px; background: var(--border); cursor: col-resize; z-index: 10; flex-shrink: 0; transition: background 0.2s; }
         .resizer:hover, .resizer.active { background: var(--primary); }
-        .main-content { flex-grow: 1; padding: 30px 20px 20px; overflow-y: auto; height: 100%; position: relative; min-width: 0; }
+        .main-content { flex-grow: 1; padding: 30px 20px 20px; overflow-y: auto; height: 100%; position: relative; min-width: 0; scroll-behavior: smooth;}
         
-        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9em; color: #bbb; transition: color 0.3s;}
-        input, select { width: 100%; padding: 8px; margin-top: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border); border-radius: 4px; }
-        input[type="range"] { accent-color: var(--primary); }
-        input[type="checkbox"] { width: auto; margin-right: 8px; transform: scale(1.2); accent-color: var(--primary);}
-        button { background-color: var(--primary); color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px; transition: 0.2s;}
-        button:hover { opacity: 0.9; }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85em; color: #bbb; transition: color 0.3s; text-transform: uppercase; letter-spacing: 0.5px;}
+        input, select { width: 100%; padding: 10px; margin-top: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border); border-radius: 6px; transition: border 0.2s;}
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        input[type="range"] { accent-color: var(--primary); cursor: pointer; }
+        input[type="checkbox"] { width: auto; margin-right: 8px; transform: scale(1.2); accent-color: var(--primary); cursor: pointer;}
+        button { background-color: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;}
+        button:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 75, 75, 0.3); }
+        button:active { transform: translateY(1px); }
         .btn-secondary { background-color: #444; }
+        .btn-secondary:hover { background-color: #555; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        
+        /* QR Button */
+        .qr-btn { background: transparent; border: 1px solid var(--border); color: var(--text-color); width: auto; padding: 8px 12px; margin-top: 0; display: flex; align-items: center; gap: 8px; border-radius: 20px;}
+        .qr-btn:hover { background: var(--input-bg); border-color: #666; box-shadow: none; transform: none;}
+
+        /* Header Row */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
         
         /* Gender UI */
         .gender-container { display: flex; gap: 20px; font-weight: bold; font-size: 1.2em; margin-top: 8px; }
-        .gender-btn { cursor: pointer; transition: 0.2s; color: #555; }
-        .gender-btn.active-male { color: var(--anim-male); text-shadow: 0 0 10px rgba(30,144,255,0.4); }
-        .gender-btn.active-female { color: var(--anim-female); text-shadow: 0 0 10px rgba(255,105,180,0.4); }
+        .gender-btn { cursor: pointer; transition: 0.2s; color: #555; padding: 5px 10px; border-radius: 6px;}
+        .gender-btn:hover { background: var(--input-bg); }
+        .gender-btn.active-male { color: var(--anim-male); text-shadow: 0 0 10px rgba(30,144,255,0.4); background: rgba(30,144,255,0.1); }
+        .gender-btn.active-female { color: var(--anim-female); text-shadow: 0 0 10px rgba(255,105,180,0.4); background: rgba(255,105,180,0.1); }
 
         /* Dual Slider CSS */
         .dual-slider-container { position: relative; width: 100%; height: 30px; margin-top: 10px; }
-        .dual-slider-track { position: absolute; width: 100%; height: 6px; background: var(--input-bg); top: 12px; border-radius: 3px; z-index: 1; }
-        .dual-slider-fill { position: absolute; height: 100%; background: var(--primary); border-radius: 3px; z-index: 2; }
+        .dual-slider-track { position: absolute; left: 9px; right: 9px; height: 6px; background: var(--input-bg); top: 12px; border-radius: 3px; z-index: 1; }
+        .dual-slider-fill { position: absolute; height: 100%; background: var(--primary); border-radius: 3px; z-index: 2; transition: left 0.1s, width 0.1s; }
         .dual-slider-container input[type="range"] { position: absolute; width: 100%; top: 0; left: 0; margin: 0; background: none; pointer-events: none; z-index: 3; -webkit-appearance: none; height: 30px; }
-        .dual-slider-container input[type="range"]::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; }
-        .dual-slider-container input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; }
+        .dual-slider-container input[type="range"]::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; transition: transform 0.1s;}
+        .dual-slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        .dual-slider-container input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; transition: transform 0.1s;}
+        .dual-slider-container input[type="range"]::-moz-range-thumb:hover { transform: scale(1.2); }
 
-        .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto;}
-        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; white-space: nowrap;}
-        .tab.active { border-bottom: 2px solid var(--primary); font-weight: bold; color: var(--text-color); }
-        .tab-content { display: none; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px;}
+        .tab { padding: 10px 20px; cursor: pointer; border-radius: 8px; background: var(--input-bg); color: #888; white-space: nowrap; transition: 0.2s; font-weight: 600;}
+        .tab:hover { background: #333; color: white;}
+        .tab.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(255,75,75,0.3);}
+        .tab-content { display: none; animation: fadeIn 0.3s ease;}
         .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card { background: var(--card-bg); padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 15px; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;}
+        .card:hover { border-color: #444; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; padding-left: 20px;}
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-        th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
-        th { background: var(--input-bg); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; border-radius: 6px; overflow: hidden;}
+        th, td { border: 1px solid var(--border); padding: 10px; text-align: left; }
+        th { background: var(--input-bg); font-weight: 600; text-transform: uppercase; font-size: 0.85em;}
 
-        /* Calendar Tweaks for 1-31 display only */
-        #calendar { background: var(--sidebar-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .fc { --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); --fc-border-color: var(--border); --fc-button-text-color: var(--text-color); --fc-button-bg-color: var(--input-bg); --fc-button-border-color: var(--border); }
-        .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--text-color); text-decoration: none; }
-        .fc-day-other { visibility: hidden; } /* Hides days from previous/next months */
+        /* Calendar Tweaks */
+        #calendar { background: var(--sidebar-bg); padding: 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+        .fc { --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); --fc-border-color: var(--border); --fc-button-text-color: var(--text-color); --fc-button-bg-color: var(--input-bg); --fc-button-border-color: var(--border); --fc-button-hover-bg-color: #444; --fc-button-active-bg-color: var(--primary); --fc-button-active-border-color: var(--primary);}
+        .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--text-color); text-decoration: none; font-weight: 600;}
+        .fc-day-other { visibility: hidden; } /* 1-31 format */
 
-        /* Bigger, Slower Gender Flash */
         #border-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; box-shadow: inset 0 0 0px transparent; }
         .flash-female { animation: flashPink 2s ease-out; }
         .flash-male { animation: flashBlue 2s ease-out; }
         @keyframes flashPink { 0% { box-shadow: inset 0 0 80px 20px var(--anim-female); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
         @keyframes flashBlue { 0% { box-shadow: inset 0 0 80px 20px var(--anim-male); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
 
+        .github-link { margin-top: auto; padding-top: 20px; text-align: center; color: #888; text-decoration: none; font-size: 0.9em; transition: color 0.2s;}
+        .github-link:hover { color: white; }
+
         @media (max-width: 768px) {
             #mobile-menu-btn { display: block; }
             .resizer { display: none; }
-            .sidebar { position: fixed; left: -100%; top: 0; width: 100% !important; height: 100%; transition: left 0.3s ease; z-index: 2000; padding-top: 50px; }
+            .sidebar { position: fixed; left: -100%; top: 0; width: 100% !important; height: 100%; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000; padding-top: 60px; box-shadow: 10px 0 20px rgba(0,0,0,0.5);}
             .sidebar.open { left: 0; }
-            #close-sidebar-btn { display: block; background: transparent; color: var(--text-color); border: none; font-size: 32px; position: absolute; top: 10px; right: 20px; width: auto; cursor: pointer; }
-            .main-content { padding-top: 60px; }
+            #close-sidebar-btn { display: block; background: transparent; color: var(--text-color); border: none; font-size: 32px; position: absolute; top: 10px; right: 20px; width: auto; cursor: pointer; padding: 0; box-shadow: none;}
+            .main-content { padding-top: 70px; }
             .grid-2 { grid-template-columns: 1fr; }
+            .header-row { flex-direction: column; align-items: flex-start; gap: 15px; }
+        }
+
+        /* 🖨️ Print Styles */
+        @media print {
+            body { background: #ffffff !important; color: #000000 !important; }
+            .sidebar, .tabs, .header-row button, #mobile-menu-btn, .toast-container, #startupModal, #qrModal, .resizer { display: none !important; }
+            .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; display: block !important; }
+            #calendar { background: #ffffff !important; box-shadow: none !important; padding: 0 !important;}
+            .fc { --fc-page-bg-color: #ffffff; --fc-neutral-bg-color: #ffffff; --fc-border-color: #dddddd; --fc-button-text-color: #000; --fc-button-bg-color: #eee; --fc-button-border-color: #ccc; }
+            .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: #000000 !important; }
+            .fc-day-bg { background: #ffffff !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
 <body>
 
-    <div id="startupModal">
+    <div id="startupModal" class="modal-overlay">
         <div class="modal-content">
             <h2>⚠️ Important Notice</h2>
             <ul>
-                <li><strong>Educational Use Only:</strong> This tool is a logistical simulation. It must not be used to skip school or commit truancy.</li>
+                <li><strong>Educational Use Only:</strong> This tool is a logistical simulation. It must not be used to skip school or commit truancy. You are responsible for any real-world actions.</li>
                 <li><strong>Privacy First:</strong> This tool runs entirely offline in your browser. It <b>does not</b> track you, collect data, or send your schedule anywhere.</li>
                 <li><strong>Verify Your Data:</strong> Always double-check generated dates, school holidays, and settings before utilizing any information.</li>
             </ul>
-            <button onclick="document.getElementById('startupModal').style.display='none'">I Understand & Agree</button>
+            <label style="color: white; font-size: 1em; margin-top: 20px; cursor: pointer; display: flex; align-items: center;">
+                <input type="checkbox" id="dontShowAgain"> Don't show this again.
+            </label>
+            <button onclick="closeStartupModal()">I Understand & Agree</button>
+        </div>
+    </div>
+
+    <div id="qrModal" class="modal-overlay" onclick="closeQRModal(event)">
+        <div class="modal-content" style="text-align: center; max-width: 350px;">
+            <span class="close-modal-x" onclick="document.getElementById('qrModal').classList.remove('show')">×</span>
+            <h3 style="margin-top:0;">Share Schedule</h3>
+            <p style="font-size: 0.9em; color: #aaa;">Scan QR code to open this site on another device.</p>
+            <div id="qrcode" style="display: flex; justify-content: center; margin: 20px 0; background: white; padding: 15px; border-radius: 8px;"></div>
         </div>
     </div>
 
     <div id="border-flash"></div>
+    <div class="toast-container" id="toastContainer"></div>
+    
     <button id="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
 
     <div class="sidebar" id="sidebar">
         <button id="close-sidebar-btn" onclick="toggleSidebar()">×</button>
-        <h3 style="margin-top: 0;">🗓️ Settings</h3>
+        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">🗓️ Settings</h3>
         
         <label>School Start Date</label><input type="date" id="schoolStart">
         <label>School End Date</label><input type="date" id="schoolEnd">
         
         <label>Country</label>
-        <input type="text" id="country" list="countryList" placeholder="Search or type any country...">
+        <input type="text" id="country" list="countryList" placeholder="Search or type any country..." autocomplete="off">
         <datalist id="countryList"></datalist>
 
         <label>State / Province</label>
-        <input type="text" id="state" placeholder="Search or type state...">
+        <input type="text" id="state" list="stateList" placeholder="Search or type state..." autocomplete="off">
+        <datalist id="stateList"></datalist>
         
-        <label id="genderLabel" style="color: var(--anim-male);">Gender</label>
+        <label id="genderLabel" style="color: var(--anim-male); margin-top: 25px;">Gender</label>
         <div class="gender-container">
             <span id="btnMale" class="gender-btn active-male" onclick="setGender('Male')">Male</span>
             <span id="btnFemale" class="gender-btn" onclick="setGender('Female')">Female</span>
         </div>
 
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
+        <hr style="margin: 25px 0; border: 0; border-top: 1px solid var(--border);">
 
-        <label>Target Days to Miss: <span id="targetValText" style="color:var(--text-color)">20</span></label>
+        <label>Target Days to Miss: <span id="targetValText" style="color:white; font-size: 1.1em;">20</span></label>
         <input type="range" id="targetDays" min="1" max="80" value="20" oninput="document.getElementById('targetValText').innerText = this.value">
         
-        <label>Sick Block Length: <span id="blockRangeText" style="color:var(--text-color)">1 - 7</span> days</label>
+        <label>Sick Block Length: <span id="blockRangeText" style="color:white; font-size: 1.1em;">1 - 7</span> days</label>
         <div class="dual-slider-container">
             <div class="dual-slider-track"><div class="dual-slider-fill" id="blockSliderFill"></div></div>
-            <input type="range" id="minBlock" min="1" max="7" value="1" oninput="updateDualSlider('minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
-            <input type="range" id="maxBlock" min="1" max="7" value="7" oninput="updateDualSlider('minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
+            <input type="range" id="minBlock" min="1" max="7" value="1" oninput="updateDualSlider(event, 'minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
+            <input type="range" id="maxBlock" min="1" max="7" value="7" oninput="updateDualSlider(event, 'minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
         </div>
 
-        <label>Min Gap (Days): <span id="minGapText" style="color:var(--text-color)">3</span></label>
+        <label>Min Gap Between Blocks: <span id="minGapText" style="color:white; font-size: 1.1em;">3</span> days</label>
         <input type="range" id="minGap" min="1" max="15" value="3" oninput="document.getElementById('minGapText').innerText = this.value">
 
-        <button onclick="generateStrategy()">Generate Strategy</button>
+        <button onclick="generateStrategy()" style="margin-top: 30px;">Generate Strategy</button>
         <button class="btn-secondary" onclick="clearSchedule()">Clear Schedule</button>
+
+        <a href="https://github.com/k4sprl/school-excuse-scheduler" target="_blank" class="github-link">View on GitHub</a>
     </div>
 
     <div class="resizer" id="resizer"></div>
 
     <div class="main-content">
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('cal')">📅 Schedule</div>
-            <div class="tab" onclick="switchTab('sym')">⚙️ Illness Config</div>
-            <div class="tab" onclick="switchTab('data')">📁 School Holidays</div>
+        <div class="header-row">
+            <div class="tabs" style="margin: 0; border: none;">
+                <div class="tab active" onclick="switchTab('cal')">📅 Schedule</div>
+                <div class="tab" onclick="switchTab('sym')">⚙️ Illness Config</div>
+                <div class="tab" onclick="switchTab('data')">📁 Holidays & Backup</div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="qr-btn" onclick="openQRModal()">📱 QR Code</button>
+                <button class="qr-btn" onclick="window.print()" style="background: var(--input-bg);">🖨️ Print</button>
+            </div>
         </div>
 
         <div id="tab-cal" class="tab-content active">
@@ -167,14 +225,14 @@
 
         <div id="tab-sym" class="tab-content">
             <div class="card">
-                <h3 style="margin-top:0;">➕ Custom Excuse</h3>
-                <input type="text" id="custName" placeholder="Excuse Name">
+                <h3 style="margin-top:0; color: var(--primary);">➕ Create Custom Excuse</h3>
+                <input type="text" id="custName" placeholder="e.g. Dental Surgery">
                 
-                <label>Excuse Duration: <span id="custBlockRangeText" style="color:var(--text-color)">1 - 3</span> days</label>
-                <div class="dual-slider-container" style="max-width: 400px; margin-bottom: 20px;">
+                <label>Excuse Duration: <span id="custBlockRangeText" style="color:white">1 - 3</span> days</label>
+                <div class="dual-slider-container" style="max-width: 400px; margin-bottom: 25px;">
                     <div class="dual-slider-track"><div class="dual-slider-fill" id="custBlockSliderFill"></div></div>
-                    <input type="range" id="custMin" min="1" max="7" value="1" oninput="updateDualSlider('custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
-                    <input type="range" id="custMax" min="1" max="7" value="3" oninput="updateDualSlider('custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
+                    <input type="range" id="custMin" min="1" max="7" value="1" oninput="updateDualSlider(event, 'custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
+                    <input type="range" id="custMax" min="1" max="7" value="3" oninput="updateDualSlider(event, 'custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
                 </div>
                 
                 <button onclick="addCustomExcuse()" style="max-width: 400px;">Add to Roster</button>
@@ -185,8 +243,8 @@
         <div id="tab-data" class="tab-content">
             <div class="grid-2">
                 <div class="card">
-                    <h3 style="margin-top:0;">🏫 School Holiday Periods</h3>
-                    <p style="font-size: 0.8em; color: #aaa;">Add periods where school is closed.</p>
+                    <h3 style="margin-top:0; color: var(--primary);">🏫 School Holiday Periods</h3>
+                    <p style="font-size: 0.85em; color: #aaa;">Add periods where school is closed.</p>
                     <input type="text" id="holName" placeholder="e.g., Autumn Break">
                     <div class="grid-2">
                         <div><label>Start</label><input type="date" id="holStart"></div>
@@ -196,19 +254,53 @@
                     <table id="holiday-table"><thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead><tbody></tbody></table>
                 </div>
                 <div class="card">
-                    <h3 style="margin-top:0;">💾 Backup</h3>
-                    <button onclick="exportSettings()">Export JSON</button>
-                    <label style="margin-top:20px;">Import JSON</label>
-                    <input type="file" id="importFile" accept=".json">
+                    <h3 style="margin-top:0; color: var(--primary);">💾 Settings Backup</h3>
+                    <p style="font-size: 0.85em; color: #aaa;">Export or import your active settings and custom data.</p>
+                    <button onclick="exportSettings()">⬇️ Export Settings (JSON)</button>
+                    <label style="margin-top:25px;">⬆️ Import Settings (JSON)</label>
+                    <input type="file" id="importFile" accept=".json" style="padding: 5px; border: none; background: transparent;">
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- GENDER & UI LOGIC ---
+        // --- MODALS & TOASTS ---
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'female' ? 'female-toast' : ''}`;
+            toast.innerHTML = `<span>${message}</span> <span style="cursor:pointer; color:#aaa;" onclick="this.parentElement.remove()">×</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 5000);
+        }
+
+        window.onload = () => {
+            if (localStorage.getItem('hideStartupModal') !== 'true') {
+                document.getElementById('startupModal').classList.add('show');
+            }
+        };
+
+        function closeStartupModal() {
+            if (document.getElementById('dontShowAgain').checked) {
+                localStorage.setItem('hideStartupModal', 'true');
+            }
+            document.getElementById('startupModal').classList.remove('show');
+        }
+
+        function openQRModal() {
+            const url = window.location.origin + window.location.pathname; // Strips ? and #
+            document.getElementById('qrcode').innerHTML = ""; // Clear old
+            new QRCode(document.getElementById("qrcode"), { text: url, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
+            document.getElementById('qrModal').classList.add('show');
+        }
+        function closeQRModal(e) { if(e.target.id === 'qrModal') document.getElementById('qrModal').classList.remove('show'); }
+
+        // --- GENDER UI ---
         let currentGender = "Male";
         function setGender(gender) {
+            if (currentGender === gender) return;
             currentGender = gender;
             const lbl = document.getElementById("genderLabel");
             const btnM = document.getElementById("btnMale");
@@ -218,56 +310,70 @@
             f.className = ''; void f.offsetWidth; // Reset animation
 
             if(gender === "Male") {
-                lbl.style.color = "var(--anim-male)";
-                btnM.classList.add("active-male");
-                btnF.classList.remove("active-female");
-                f.classList.add('flash-male');
+                lbl.style.color = "var(--anim-male)"; btnM.classList.add("active-male"); btnF.classList.remove("active-female"); f.classList.add('flash-male');
             } else {
-                lbl.style.color = "var(--anim-female)";
-                btnF.classList.add("active-female");
-                btnM.classList.remove("active-male");
-                f.classList.add('flash-female');
+                lbl.style.color = "var(--anim-female)"; btnF.classList.add("active-female"); btnM.classList.remove("active-male"); f.classList.add('flash-female');
+                showToast("Unlocked Female-specific options:<br>• Menstrual Pain<br>• Heavy Flow & Fatigue<br>• Premenstrual Fatigue", "female");
             }
             renderIllnessConfig();
         }
 
         // --- DUAL SLIDER LOGIC ---
-        function updateDualSlider(minId, maxId, fillId, textId) {
-            let minNode = document.getElementById(minId);
-            let maxNode = document.getElementById(maxId);
-            let minVal = parseInt(minNode.value);
-            let maxVal = parseInt(maxNode.value);
+        function updateDualSlider(e, minId, maxId, fillId, textId) {
+            let minNode = document.getElementById(minId); let maxNode = document.getElementById(maxId);
+            let minVal = parseInt(minNode.value); let maxVal = parseInt(maxNode.value);
             
-            // Push knots instead of crossing over
-            if (minVal > maxVal) {
-                if (document.activeElement === minNode) maxNode.value = minVal;
-                else minNode.value = maxVal;
-                minVal = parseInt(minNode.value);
-                maxVal = parseInt(maxNode.value);
+            // Prevent knots from crossing
+            if (minVal >= maxVal) {
+                if (e && e.target === minNode) { minNode.value = maxVal - 1; minVal = maxVal - 1; }
+                else { maxNode.value = minVal + 1; maxVal = minVal + 1; }
             }
-            
             document.getElementById(textId).innerText = `${minVal} - ${maxVal}`;
             
-            const maxLimit = 7; const minLimit = 1;
-            let percent1 = ((minVal - minLimit) / (maxLimit - minLimit)) * 100;
-            let percent2 = ((maxVal - minLimit) / (maxLimit - minLimit)) * 100;
+            // Calculate fill percentages based on inner track
+            let range = maxNode.max - minNode.min;
+            let percent1 = ((minVal - minNode.min) / range) * 100;
+            let percent2 = ((maxVal - minNode.min) / range) * 100;
             
             const fill = document.getElementById(fillId);
             fill.style.left = percent1 + "%";
             fill.style.width = (percent2 - percent1) + "%";
         }
-        updateDualSlider('minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText');
-        updateDualSlider('custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText');
+        updateDualSlider(null, 'minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText');
+        updateDualSlider(null, 'custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText');
 
-        // --- GLOBAL COUNTRY INJECTION ---
-        // A substantial unbiased list including regions commonly omitted by APIs.
-        const globalCountries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Australia","Austria","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Bhutan","Bolivia","Bosnia and Herzegovina","Brazil","Bulgaria","Cambodia","Cameroon","Canada","Chile","China","Colombia","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Dominican Republic","Ecuador","Egypt","El Salvador","Estonia","Ethiopia","Fiji","Finland","France","Georgia","Germany","Ghana","Greece","Guatemala","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kosovo","Kuwait","Latvia","Lebanon","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malaysia","Maldives","Malta","Mexico","Moldova","Monaco","Mongolia","Montenegro","Morocco","Myanmar","Nepal","Netherlands","New Zealand","Nicaragua","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palestine","Panama","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","San Marino","Saudi Arabia","Senegal","Serbia","Singapore","Slovakia","Slovenia","Somalia","South Africa","South Korea","Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria","Taiwan","Tanzania","Thailand","Tunisia","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+        // --- GLOBAL DATA INJECTION ---
+        const globalCountries = [{n:"Afghanistan",c:"AF"},{n:"Albania",c:"AL"},{n:"Argentina",c:"AR"},{n:"Australia",c:"AU"},{n:"Austria",c:"AT"},{n:"Belgium",c:"BE"},{n:"Brazil",c:"BR"},{n:"Canada",c:"CA"},{n:"China",c:"CN"},{n:"Colombia",c:"CO"},{n:"Croatia",c:"HR"},{n:"Cuba",c:"CU"},{n:"Czech Republic",c:"CZ"},{n:"Denmark",c:"DK"},{n:"Egypt",c:"EG"},{n:"Finland",c:"FI"},{n:"France",c:"FR"},{n:"Germany",c:"DE"},{n:"Greece",c:"GR"},{n:"Hungary",c:"HU"},{n:"India",c:"IN"},{n:"Indonesia",c:"ID"},{n:"Ireland",c:"IE"},{n:"Israel",c:"IL"},{n:"Italy",c:"IT"},{n:"Japan",c:"JP"},{n:"Mexico",c:"MX"},{n:"Netherlands",c:"NL"},{n:"New Zealand",c:"NZ"},{n:"Norway",c:"NO"},{n:"Palestine",c:"PS"},{n:"Poland",c:"PL"},{n:"Portugal",c:"PT"},{n:"Russia",c:"RU"},{n:"Saudi Arabia",c:"SA"},{n:"South Africa",c:"ZA"},{n:"South Korea",c:"KR"},{n:"Spain",c:"ES"},{n:"Sweden",c:"SE"},{n:"Switzerland",c:"CH"},{n:"Turkey",c:"TR"},{n:"Ukraine",c:"UA"},{n:"United Arab Emirates",c:"AE"},{n:"United Kingdom",c:"GB"},{n:"United States",c:"US"}];
         
         const dl = document.getElementById('countryList');
-        globalCountries.forEach(c => {
-            let opt = document.createElement('option');
-            opt.value = c;
-            dl.appendChild(opt);
+        globalCountries.sort((a,b)=>a.n.localeCompare(b.n)).forEach(c => { let opt = document.createElement('option'); opt.value = c.n; dl.appendChild(opt); });
+
+        // Fetch States API
+        document.getElementById('country').addEventListener('change', async (e) => {
+            const countryName = e.target.value;
+            const stateInput = document.getElementById('state');
+            const stateList = document.getElementById('stateList');
+            stateInput.value = ''; stateList.innerHTML = '';
+            
+            try {
+                const res = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country: countryName })
+                });
+                const data = await res.json();
+                if (data && data.data && data.data.states) {
+                    data.data.states.forEach(s => { let opt = document.createElement('option'); opt.value = s.name; stateList.appendChild(opt); });
+                }
+            } catch(err) { /* Silent fail, user can still type freely */ }
+            
+            // Try to fetch public holidays
+            let codeObj = globalCountries.find(c => c.n.toLowerCase() === countryName.toLowerCase());
+            if(codeObj) {
+                try {
+                    const year = new Date(document.getElementById('schoolStart').value).getFullYear();
+                    const hRes = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${codeObj.c}`);
+                    if(hRes.ok) { publicHolidays = (await hRes.json()).map(h => ({ name: h.name, date: h.date })); calendar.refetchEvents(); }
+                } catch(e) {}
+            }
         });
 
         // --- DATA ---
@@ -286,58 +392,38 @@
         let state = { allSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), activeSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), customHolidays: [] };
         let sickBlocks = []; let publicHolidays = []; let calendar;
 
-        // --- RESIZE LOGIC ---
+        // --- RESIZE & TAB LOGIC ---
         const resizer = document.getElementById('resizer'); const sidebar = document.getElementById('sidebar'); let isResizing = false;
-        resizer.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'col-resize'; });
-        document.addEventListener('mousemove', (e) => { if (isResizing && e.clientX > 200 && e.clientX < window.innerWidth - 300) sidebar.style.width = e.clientX + 'px'; });
-        document.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor = 'default'; if (calendar) calendar.render(); });
+        resizer.addEventListener('mousedown', () => { isResizing = true; document.body.style.cursor = 'col-resize'; resizer.classList.add('active');});
+        document.addEventListener('mousemove', (e) => { if (isResizing && e.clientX > 250 && e.clientX < window.innerWidth - 300) sidebar.style.width = e.clientX + 'px'; });
+        document.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor = 'default'; resizer.classList.remove('active'); if (calendar) calendar.render(); });
         function toggleSidebar() { sidebar.classList.toggle('open'); if (calendar) setTimeout(() => calendar.render(), 300); }
         function switchTab(tabId) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active'); document.getElementById('tab-' + tabId).classList.add('active'); if(tabId === 'cal') calendar.render(); }
 
         // --- INIT ---
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             const t = new Date(); document.getElementById('schoolStart').valueAsDate = t;
             const n = new Date(); n.setFullYear(t.getFullYear() + 1); document.getElementById('schoolEnd').valueAsDate = n;
             initCalendar(); renderIllnessConfig();
-        });
-
-        // Try to fetch holidays if Nager.date supports the typed country
-        document.getElementById('country').addEventListener('change', async () => {
-            try {
-                const year = new Date(document.getElementById('schoolStart').value).getFullYear();
-                // We do a rough lookup based on name. If it fails, we fail silently to preserve the user's manual input.
-                const res = await fetch(`https://date.nager.at/api/v3/AvailableCountries`);
-                const countries = await res.json();
-                const typed = document.getElementById('country').value.toLowerCase();
-                const match = countries.find(c => c.name.toLowerCase() === typed);
-                
-                if(match) {
-                    const hRes = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${match.countryCode}`);
-                    publicHolidays = (await hRes.json()).map(h => ({ name: h.name, date: h.date }));
-                    calendar.refetchEvents();
-                } else {
-                    publicHolidays = []; calendar.refetchEvents();
-                }
-            } catch(e) {}
         });
 
         function initCalendar() {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView: 'dayGridMonth', height: 'auto', 
                 firstDay: 1, // Start on Monday
-                showNonCurrentDates: false, // Hide prev/next month overflow
-                fixedWeekCount: false, // Don't force 6 rows
+                showNonCurrentDates: false, // 1-31 only format
+                fixedWeekCount: false,
                 headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
                 events: (info, success) => {
-                    let evs = [{ daysOfWeek: [0, 6], display: 'background', color: '#198754' }];
+                    let evs = [{ daysOfWeek: [0, 6], display: 'background', color: 'var(--weekend-bg)' }];
                     publicHolidays.forEach(h => evs.push({ title: h.name, start: h.date, allDay: true, color: '#ffc107', textColor: '#000' }));
                     state.customHolidays.forEach(h => {
                         let eD = new Date(h.end); eD.setDate(eD.getDate() + 1);
-                        evs.push({ title: h.name, start: h.start, end: eD.toISOString().split('T')[0], color: '#17a2b8', textColor: '#000' });
+                        evs.push({ title: h.name, start: h.start, end: eD.toISOString().split('T')[0], color: '#17a2b8', textColor: '#fff' });
                     });
                     sickBlocks.forEach(sb => {
                         let eD = new Date(sb.end); eD.setDate(eD.getDate() + 1);
-                        evs.push({ title: `${sb.reason} (${sb.missed}d)`, start: sb.start, end: eD.toISOString().split('T')[0], color: '#dc3545' });
+                        evs.push({ title: `${sb.reason} (${sb.missed}d)`, start: sb.start, end: eD.toISOString().split('T')[0], color: 'var(--primary)', textColor: '#fff' });
                     });
                     success(evs);
                 }
@@ -346,14 +432,14 @@
         }
 
         function renderIllnessConfig() {
-            const container = document.getElementById('illness-list'); container.innerHTML = '<h3>Excuse Roster</h3>';
+            const container = document.getElementById('illness-list'); container.innerHTML = '<h3 style="color:var(--primary);">Active Roster</h3>';
             for (let name in state.allSymptoms) {
                 const d = state.allSymptoms[name]; if (currentGender === "Male" && d.gender === "Female") continue;
                 const active = state.activeSymptoms.hasOwnProperty(name);
-                let html = `<div class="card"><label><input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${active?'checked':''}> ${name} <span style="font-size:0.8em; color:#888;">(${d.min}-${d.max}d)</span></label>`;
-                if (active && d.modifiers) {
-                    html += `<div class="mod-grid">`;
-                    d.modifiers.forEach(m => html += `<label style="font-weight:normal; font-size:0.8em;"><input type="checkbox" onchange="toggleMod('${name}','${m}',this.checked)" ${state.activeSymptoms[name].modifiers.includes(m)?'checked':''}> ${m}</label>`);
+                let html = `<div class="card"><label style="margin:0; font-size:1em; text-transform:none; letter-spacing:0; color:white;"><input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${active?'checked':''}> ${name} <span style="font-size:0.8em; color:#888;">(${d.min}-${d.max}d)</span></label>`;
+                if (active && d.modifiers && d.modifiers.length > 0) {
+                    html += `<div class="mod-grid" style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px;">`;
+                    d.modifiers.forEach(m => html += `<label style="font-weight:normal; font-size:0.85em; text-transform:none;"><input type="checkbox" onchange="toggleMod('${name}','${m}',this.checked)" ${state.activeSymptoms[name].modifiers.includes(m)?'checked':''}> ${m}</label>`);
                     html += `</div>`;
                 }
                 container.insertAdjacentHTML('beforeend', html + `</div>`);
@@ -367,18 +453,18 @@
             const name = document.getElementById('custName').value.trim();
             const min = parseInt(document.getElementById('custMin').value);
             const max = parseInt(document.getElementById('custMax').value);
-            if (!name) return alert("Please enter an excuse name.");
+            if (!name) return showToast("Please enter an excuse name.", "error");
             
             const newEx = { min, max, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: [] };
-            state.allSymptoms[name] = newEx;
-            state.activeSymptoms[name] = JSON.parse(JSON.stringify(newEx));
-            document.getElementById('custName').value = '';
-            renderIllnessConfig();
+            state.allSymptoms[name] = newEx; state.activeSymptoms[name] = JSON.parse(JSON.stringify(newEx));
+            document.getElementById('custName').value = ''; renderIllnessConfig();
+            showToast(`Added custom excuse: ${name}`);
         }
 
         function addCustomHoliday() {
             const n = document.getElementById('holName').value; const s = document.getElementById('holStart').value; const e = document.getElementById('holEnd').value;
-            if(!n || !s || !e) return; state.customHolidays.push({name:n, start:s, end:e});
+            if(!n || !s || !e) return showToast("Fill all holiday fields.", "error"); 
+            state.customHolidays.push({name:n, start:s, end:e});
             document.getElementById('holName').value = ''; renderHolidaysTable(); calendar.refetchEvents();
         }
         function renderHolidaysTable() {
@@ -389,8 +475,7 @@
         function generateStrategy() {
             sickBlocks = []; const start = document.getElementById('schoolStart').value; const end = document.getElementById('schoolEnd').value;
             const target = parseInt(document.getElementById('targetDays').value); 
-            const minB = parseInt(document.getElementById('minBlock').value);
-            const maxB = parseInt(document.getElementById('maxBlock').value);
+            const minB = parseInt(document.getElementById('minBlock').value); const maxB = parseInt(document.getElementById('maxBlock').value);
             const gap = parseInt(document.getElementById('minGap').value);
             if(window.innerWidth <= 768) toggleSidebar();
 
@@ -401,8 +486,13 @@
                 curr = new Date(d.setDate(d.getDate()+1)).toISOString().split('T')[0];
             }
 
+            if(pool.length < target) {
+                showToast(`Error: Only ${pool.length} valid school days available, but target is ${target}.`, "error");
+                return;
+            }
+
             let missed = 0; let its = 0;
-            while(missed < target && pool.length > 0 && its < 1000) {
+            while(missed < target && pool.length > 0 && its < 2000) {
                 its++; let sD = pool[Math.floor(Math.random()*pool.length)]; 
                 let dur = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
                 let bMissed = 0; let eD = sD;
@@ -427,6 +517,13 @@
                 missed += bMissed;
                 for(let i=0; i<dur; i++) { let tD = new Date(new Date(sD).setDate(new Date(sD).getDate()+i)).toISOString().split('T')[0]; pool = pool.filter(p => p !== tD); }
             }
+            
+            if (missed < target) {
+                showToast(`Warning: Constraints were too tight. Only placed ${missed} out of ${target} days.`, "error");
+            } else {
+                showToast(`Successfully generated ${missed} days off!`, "success");
+                switchTab('cal');
+            }
             calendar.refetchEvents();
         }
 
@@ -434,8 +531,24 @@
             const d = { target: document.getElementById('targetDays').value, state };
             const s = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(d));
             const n = document.createElement('a'); n.setAttribute("href", s); n.setAttribute("download", "settings.json"); n.click();
+            showToast("Settings Exported!");
         }
-        function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); }
+        function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); showToast("Schedule Cleared.");}
+        
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.target) { document.getElementById('targetDays').value = data.target; document.getElementById('targetValText').innerText = data.target; }
+                    if (data.state) { state = data.state; }
+                    renderIllnessConfig(); renderHolidaysTable(); calendar.refetchEvents();
+                    showToast("Settings imported successfully!");
+                } catch (err) { showToast("Invalid JSON file.", "error"); }
+            };
+            reader.readAsText(file);
+        });
     </script>
 </body>
 </html>
