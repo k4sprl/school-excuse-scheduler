@@ -8,7 +8,8 @@ from streamlit_calendar import calendar
 import json
 
 # --- 1. STATE INITIALIZATION ---
-st.set_page_config(page_title="School Excuse Scheduler", layout="wide", initial_sidebar_state="collapsed")
+# CHANGED: initial_sidebar_state is now "expanded"
+st.set_page_config(page_title="School Excuse Scheduler", layout="wide", initial_sidebar_state="expanded")
 
 DEFAULT_SYMPTOMS = {
     "Migraine": {"min": 1, "max": 2, "seasons": [1,2,3,4,5,6,7,8,9,10,11,12], "is_period": False, "modifiers": ["with severe light sensitivity", "with severe nausea", "and visual aura", "causing extreme dizziness"]},
@@ -25,9 +26,7 @@ DEFAULT_SYMPTOMS = {
 }
 
 if "sick_blocks" not in st.session_state: st.session_state.sick_blocks = []
-# Updated to use today's date dynamically
 if "school_start" not in st.session_state: st.session_state.school_start = date.today()
-# Updated to automatically default the end date to 1 year from today
 if "school_end" not in st.session_state: st.session_state.school_end = date.today() + timedelta(days=365)
 
 if "target_val" not in st.session_state: st.session_state.target_val = 20
@@ -40,11 +39,12 @@ if "active_symptoms" not in st.session_state: st.session_state.active_symptoms =
 if "gender" not in st.session_state: st.session_state.gender = "Male"
 
 # --- 2. CSS & UI COMPACTION ---
+# CHANGED: Removed the display: none for the header so the sidebar button is visible on mobile
 st.markdown("""
 <style>
 /* Pull calendar up and reduce whitespace */
-.block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; max-width: 98% !important; }
-header[data-testid="stHeader"] { display: none; } /* Hide top whitespace */
+.block-container { padding-top: 2rem !important; padding-bottom: 1rem !important; max-width: 98% !important; }
+header[data-testid="stHeader"] { background-color: transparent !important; } 
 /* Calendar event text wrapping for mobile */
 .fc-event { white-space: normal !important; word-wrap: break-word !important; font-size: 0.85em !important; }
 .fc-toolbar-title { font-size: 1.2em !important; }
@@ -68,7 +68,7 @@ def fetch_nager_holidays():
                     if st.session_state.school_start <= h_date <= st.session_state.school_end:
                         holidays_list.append({"Name": h['name'], "Start": h_date, "End": h_date, "Type": "Public"})
     except:
-        pass # Silently fail if API is unreachable.
+        pass 
     st.session_state.public_holidays = pd.DataFrame(holidays_list) if holidays_list else pd.DataFrame(columns=["Name", "Start", "End", "Type"])
 
 # --- 4. INTERACTIVE DIALOG MODAL ---
