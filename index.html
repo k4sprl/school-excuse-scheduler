@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <style>
         :root {
-            /* 🌙 Dark Mode Variables */
             --bg-color: #121212;
             --text-color: #e0e0e0;
             --sidebar-bg: #1e1e1e;
@@ -23,28 +22,24 @@
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { margin: 0; display: flex; background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; position: relative; }
         
-        /* Disclaimer Banner */
         #disclaimer {
             background-color: var(--disclaimer-bg); color: var(--disclaimer-text); text-align: center; padding: 10px; 
             font-weight: bold; width: 100%; position: absolute; top: 0; z-index: 1000;
             border-bottom: 2px solid var(--disclaimer-text);
         }
 
-        /* 📱 Mobile Menu Button */
         #mobile-menu-btn {
             display: none; position: fixed; top: 50px; left: 10px; z-index: 1001; 
             background: var(--sidebar-bg); color: var(--text-color); border: 1px solid var(--border); 
             padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 1.2em;
         }
 
-        /* Layout */
         .sidebar { 
             width: 320px; min-width: 250px; background: var(--sidebar-bg); padding: 60px 20px 20px; 
             overflow-y: auto; height: 100%; z-index: 100; display: flex; flex-direction: column;
         }
         #close-sidebar-btn { display: none; }
         
-        /* 🖱️ Resizer Handle */
         .resizer {
             width: 6px; background: var(--border); cursor: col-resize; z-index: 10; flex-shrink: 0;
             transition: background 0.2s;
@@ -53,7 +48,6 @@
 
         .main-content { flex-grow: 1; padding: 60px 20px 20px; overflow-y: auto; height: 100%; position: relative; min-width: 0; }
         
-        /* Inputs & Buttons */
         label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9em; color: #bbb;}
         input, select { 
             width: 100%; padding: 8px; margin-top: 5px; background: var(--input-bg); 
@@ -64,25 +58,21 @@
         button { background-color: var(--primary); color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px; transition: 0.2s;}
         button:hover { opacity: 0.9; }
         .btn-secondary { background-color: #444; }
-        .btn-secondary:hover { background-color: #555; }
         
-        /* Tabs */
         .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto;}
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; white-space: nowrap;}
         .tab.active { border-bottom: 2px solid var(--primary); font-weight: bold; color: var(--text-color); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Cards & Grids */
         .card { background: var(--card-bg); padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 15px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; padding-left: 20px;}
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
         th { background: var(--input-bg); }
 
-        /* Calendar Dark Mode */
         #calendar { background: var(--sidebar-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .fc { 
             --fc-page-bg-color: var(--sidebar-bg); 
@@ -91,42 +81,30 @@
             --fc-button-text-color: var(--text-color);
             --fc-button-bg-color: var(--input-bg);
             --fc-button-border-color: var(--border);
-            --fc-button-hover-bg-color: #333;
-            --fc-button-hover-border-color: #444;
-            --fc-button-active-bg-color: var(--primary);
-            --fc-button-active-border-color: var(--primary);
         }
-        .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border); }
         .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--text-color); text-decoration: none; }
 
-        /* ✨ Gender Border Animation */
         #border-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; box-shadow: inset 0 0 0px transparent; }
         .flash-female { animation: flashPink 0.8s ease-out; }
         .flash-male { animation: flashBlue 0.8s ease-out; }
         @keyframes flashPink { 0% { box-shadow: inset 0 0 30px 10px var(--anim-female); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
         @keyframes flashBlue { 0% { box-shadow: inset 0 0 30px 10px var(--anim-male); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
 
-        /* 📱 Responsive */
         @media (max-width: 768px) {
             #mobile-menu-btn { display: block; }
             .resizer { display: none; }
             .sidebar { position: fixed; left: -100%; top: 0; width: 100% !important; height: 100%; transition: left 0.3s ease; z-index: 2000; padding-top: 50px; }
             .sidebar.open { left: 0; }
-            #close-sidebar-btn { display: block; background: transparent; color: var(--text-color); border: none; font-size: 32px; position: absolute; top: 10px; right: 20px; width: auto; padding: 0; margin: 0; cursor: pointer; }
+            #close-sidebar-btn { display: block; background: transparent; color: var(--text-color); border: none; font-size: 32px; position: absolute; top: 10px; right: 20px; width: auto; cursor: pointer; }
             .main-content { padding-top: 100px; }
             .grid-2 { grid-template-columns: 1fr; }
-        }
-        @media print {
-            .sidebar, #disclaimer, .tabs, .resizer, #mobile-menu-btn, .card { display: none !important; }
-            body, #calendar { background: white !important; color: black !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
 <body>
 
     <div id="border-flash"></div>
-    <div id="disclaimer">⚠️ FOR EDUCATIONAL PURPOSES ONLY. This tool does not constitute medical advice or authorize truancy.</div>
+    <div id="disclaimer">⚠️ FOR EDUCATIONAL PURPOSES ONLY. This tool is for logistical planning simulations.</div>
     <button id="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
 
     <div class="sidebar" id="sidebar">
@@ -135,7 +113,7 @@
         
         <label>School Start Date</label><input type="date" id="schoolStart">
         <label>School End Date</label><input type="date" id="schoolEnd">
-        <label>Country (ISO-3166 Global)</label><select id="country"><option value="CH">Loading...</option></select>
+        <label>Country (Holidays)</label><select id="country"><option value="CH">Loading...</option></select>
         <label>Student Gender</label>
         <select id="gender">
             <option value="Male">Male</option>
@@ -148,7 +126,7 @@
         <input type="range" id="targetDays" min="1" max="80" value="20" oninput="document.getElementById('targetValText').innerText = this.value">
         <label>Max Sick Block: <span id="maxBlockText" style="color:var(--text-color)">7</span> days</label>
         <input type="range" id="maxBlock" min="1" max="14" value="7" oninput="document.getElementById('maxBlockText').innerText = this.value">
-        <label>Min Days Between: <span id="minGapText" style="color:var(--text-color)">3</span></label>
+        <label>Min Gap (Days): <span id="minGapText" style="color:var(--text-color)">3</span></label>
         <input type="range" id="minGap" min="1" max="15" value="3" oninput="document.getElementById('minGapText').innerText = this.value">
 
         <button onclick="generateStrategy()">Generate Strategy</button>
@@ -161,7 +139,7 @@
         <div class="tabs">
             <div class="tab active" onclick="switchTab('cal')">📅 Schedule</div>
             <div class="tab" onclick="switchTab('sym')">⚙️ Illness Config</div>
-            <div class="tab" onclick="switchTab('data')">📁 Data & Holidays</div>
+            <div class="tab" onclick="switchTab('data')">📁 School Holidays</div>
         </div>
 
         <div id="tab-cal" class="tab-content active">
@@ -170,380 +148,193 @@
 
         <div id="tab-sym" class="tab-content">
             <div class="card">
-                <h3 style="margin-top:0;">➕ Create Custom Excuse</h3>
-                <label>Excuse Name</label>
-                <input type="text" id="custName" placeholder="e.g., Dental Surgery">
+                <h3 style="margin-top:0;">➕ Custom Excuse</h3>
+                <input type="text" id="custName" placeholder="Excuse Name">
                 <div class="grid-2">
-                    <div><label>Min Days</label><input type="number" id="custMin" value="1" min="1"></div>
-                    <div><label>Max Days</label><input type="number" id="custMax" value="3" min="1"></div>
+                    <div><label>Min Days</label><input type="number" id="custMin" value="1"></div>
+                    <div><label>Max Days</label><input type="number" id="custMax" value="3"></div>
                 </div>
-                <div class="grid-2">
-                    <div>
-                        <label>Gender Limitation</label>
-                        <select id="custGender"><option value="None">None</option><option value="Male">Male</option><option value="Female">Female</option></select>
-                    </div>
-                    <div>
-                        <label>Modifiers (comma-separated)</label>
-                        <input type="text" id="custMods" placeholder="e.g., requiring rest, with swelling">
-                    </div>
-                </div>
-                <button onclick="addCustomExcuse()" style="width: auto;">Add Excuse to Roster</button>
+                <button onclick="addCustomExcuse()">Add to Roster</button>
             </div>
-
-            <h3>Enable/Disable Excuses & Modifiers</h3>
             <div id="illness-list"></div>
         </div>
 
         <div id="tab-data" class="tab-content">
             <div class="grid-2">
                 <div class="card">
-                    <h3 style="margin-top:0;">🏖️ Custom Holidays</h3>
-                    <label>Event Name</label><input type="text" id="holName" placeholder="e.g., Family Vacation">
+                    <h3 style="margin-top:0;">🏫 School Holiday Periods</h3>
+                    <p style="font-size: 0.8em; color: #aaa;">Add periods where school is closed (Spring Break, etc.).</p>
+                    <input type="text" id="holName" placeholder="e.g., Autumn Break">
                     <div class="grid-2">
                         <div><label>Start</label><input type="date" id="holStart"></div>
                         <div><label>End</label><input type="date" id="holEnd"></div>
                     </div>
-                    <button onclick="addCustomHoliday()">Add Event</button>
-                    <button class="btn-secondary" onclick="clearCustomHolidays()" style="margin-top: 10px;">Clear Holidays</button>
-                    
-                    <table id="holiday-table">
-                        <thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
+                    <button onclick="addCustomHoliday()">Add School Holiday</button>
+                    <table id="holiday-table"><thead><tr><th>Name</th><th>Start</th><th>End</th></tr></thead><tbody></tbody></table>
                 </div>
-
                 <div class="card">
-                    <h3 style="margin-top:0;">💾 Settings Backup</h3>
-                    <p style="font-size: 0.9em; color: #aaa;">Export your active settings, custom excuses, and custom holidays, or import a previous backup.</p>
-                    <button onclick="exportSettings()">⬇️ Export Settings (JSON)</button>
-                    
-                    <label style="margin-top: 20px;">⬆️ Import Settings (JSON)</label>
-                    <input type="file" id="importFile" accept=".json" style="padding: 0; background: none; border: none;">
+                    <h3 style="margin-top:0;">💾 Backup</h3>
+                    <button onclick="exportSettings()">Export JSON</button>
+                    <label style="margin-top:20px;">Import JSON</button>
+                    <input type="file" id="importFile" accept=".json">
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- UI & RESIZE LOGIC ---
-        const resizer = document.getElementById('resizer');
-        const sidebar = document.getElementById('sidebar');
-        let isResizing = false;
+        // --- DATA ---
+        const DEFAULT_SYMPTOMS = {
+            "Migraine": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["with light sensitivity", "with severe nausea"] },
+            "Food Poisoning": { min: 1, max: 3, seasons: [6,7,8,9], is_period: false, modifiers: ["with mild dehydration", "sharp stomach cramps"] },
+            "Stomach Bug": { min: 2, max: 4, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["with vomiting", "mild fever"] },
+            "Severe Cold": { min: 2, max: 5, seasons: [9,10,11,12,1,2,3], is_period: false, modifiers: ["with dry cough", "sinus pressure"] },
+            "Influenza (Flu)": { min: 4, max: 7, seasons: [11,12,1,2,3], is_period: false, modifiers: ["high fever", "body aches"] },
+            "Sprained Ankle": { min: 3, max: 7, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["requiring rest", "swelling"] },
+            "Menstrual Pain (Dysmenorrhea)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["severe cramping", "bed rest"] },
+            "Heavy Flow & Fatigue (Menorrhagia/Anemia)": { min: 1, max: 3, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["extreme exhaustion", "severe dizziness"] },
+            "Premenstrual Fatigue & Migraine (PMS)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["nausea", "mood fatigue"] }
+        };
 
-        resizer.addEventListener('mousedown', (e) => { isResizing = true; resizer.classList.add('active'); document.body.style.cursor = 'col-resize'; e.preventDefault(); });
+        let state = { allSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), activeSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), customHolidays: [] };
+        let sickBlocks = []; let publicHolidays = []; let calendar;
+
+        // --- UI LOGIC ---
+        const resizer = document.getElementById('resizer'); const sidebar = document.getElementById('sidebar'); let isResizing = false;
+        resizer.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'col-resize'; });
         document.addEventListener('mousemove', (e) => { if (isResizing && e.clientX > 200 && e.clientX < window.innerWidth - 300) sidebar.style.width = e.clientX + 'px'; });
-        document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; resizer.classList.remove('active'); document.body.style.cursor = 'default'; if (calendar) calendar.render(); } });
-        window.addEventListener('resize', () => { sidebar.style.width = window.innerWidth <= 768 ? '100%' : '320px'; if (calendar) setTimeout(() => calendar.render(), 100); });
-        
+        document.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor = 'default'; if (calendar) calendar.render(); });
         function toggleSidebar() { sidebar.classList.toggle('open'); if (calendar) setTimeout(() => calendar.render(), 300); }
+        function switchTab(tabId) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active'); document.getElementById('tab-' + tabId).classList.add('active'); if(tabId === 'cal') calendar.render(); }
 
-        document.getElementById('gender').addEventListener('change', function(e) {
+        document.getElementById('gender').addEventListener('change', (e) => {
             const f = document.getElementById('border-flash'); f.className = ''; void f.offsetWidth;
             f.classList.add(e.target.value === 'Female' ? 'flash-female' : 'flash-male');
-            renderIllnessConfig(); // Re-render config to hide/show gender-specific items
-        });
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
-            document.getElementById('tab-' + tabId).classList.add('active');
-            if(tabId === 'cal') calendar.render();
-        }
-
-        // --- GLOBAL STATE ---
-        const DEFAULT_SYMPTOMS = {
-            "Migraine": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["with severe light sensitivity", "with severe nausea", "and visual aura", "causing extreme dizziness"] },
-            "Food Poisoning": { min: 1, max: 3, seasons: [6,7,8,9], is_period: false, modifiers: ["from suspected salmonella", "with mild dehydration", "with continuous vomiting", "and sharp stomach cramps"] },
-            "Severe Allergy Flare-up": { min: 1, max: 2, seasons: [3,4,5], is_period: false, modifiers: ["requiring strong antihistamines", "with severe sinus pressure", "causing a severe rash", "with swollen eyes"] },
-            "Stomach Bug (Gastroenteritis)": { min: 2, max: 4, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["with heavy cramping", "with vomiting", "and a mild fever", "and severe headaches", "with extreme fatigue"] },
-            "Severe Cold": { min: 2, max: 5, seasons: [9,10,11,12,1,2,3], is_period: false, modifiers: ["with a heavy dry cough", "and secondary sinus infection", "with a mild fever", "and loss of voice"] },
-            "Influenza (Flu)": { min: 4, max: 7, seasons: [11,12,1,2,3], is_period: false, modifiers: ["with high fever", "with severe body aches", "and chills", "causing severe exhaustion"] },
-            "Sprained Ankle": { min: 3, max: 7, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["requiring strict rest", "with heavy swelling", "requiring crutches for a few days"] },
-            "Tonsillitis": { min: 4, max: 7, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["requiring antibiotics", "with a fever", "making swallowing impossible"] },
-            "Menstrual Pain (Dysmenorrhea)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["with severe cramping", "requiring bed rest", "with heavy lower back pain"] }
-        };
-
-        let state = {
-            allSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)),
-            activeSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)),
-            customHolidays: []
-        };
-        let sickBlocks = [];
-        let publicHolidays = [];
-        let calendar;
-
-        // Init Dates
-        const today = new Date(); document.getElementById('schoolStart').valueAsDate = today;
-        document.getElementById('holStart').valueAsDate = today; document.getElementById('holEnd').valueAsDate = today;
-        const nextYear = new Date(); nextYear.setFullYear(today.getFullYear() + 1); document.getElementById('schoolEnd').valueAsDate = nextYear;
-
-        // --- INIT DATA & UI ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadGlobalCountries();
-            initCalendar();
             renderIllnessConfig();
-            renderCustomHolidays();
         });
 
-        async function loadGlobalCountries() {
-            try {
-                const res = await fetch('https://date.nager.at/api/v3/AvailableCountries');
-                const countries = await res.json();
-                const sel = document.getElementById('country');
-                sel.innerHTML = '';
-                countries.sort((a,b) => a.name.localeCompare(b.name)).forEach(c => {
-                    let opt = document.createElement('option');
-                    opt.value = c.countryCode; opt.textContent = c.name;
-                    if (c.countryCode === 'CH') opt.selected = true; // Default Switzerland
-                    sel.appendChild(opt);
-                });
-                fetchHolidays();
-            } catch (e) { console.error("Failed to load ISO countries"); }
+        // --- CORE ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const t = new Date(); document.getElementById('schoolStart').valueAsDate = t;
+            const n = new Date(); n.setFullYear(t.getFullYear() + 1); document.getElementById('schoolEnd').valueAsDate = n;
+            await loadCountries(); initCalendar(); renderIllnessConfig();
+        });
+
+        async function loadCountries() {
+            const res = await fetch('https://date.nager.at/api/v3/AvailableCountries');
+            const countries = await res.json();
+            const sel = document.getElementById('country'); sel.innerHTML = '';
+            countries.sort((a,b) => a.name.localeCompare(b.name)).forEach(c => {
+                let opt = document.createElement('option'); opt.value = c.countryCode; opt.textContent = c.name;
+                if(c.countryCode === 'CH') opt.selected = true; sel.appendChild(opt);
+            });
+            fetchHolidays();
         }
 
         async function fetchHolidays() {
             const cc = document.getElementById('country').value;
             const year = new Date(document.getElementById('schoolStart').value).getFullYear();
-            try {
-                const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${cc}`);
-                publicHolidays = (await res.json()).map(h => ({ name: h.name, date: h.date }));
-                calendar.refetchEvents();
-            } catch (e) {}
+            const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${cc}`);
+            publicHolidays = (await res.json()).map(h => ({ name: h.name, date: h.date }));
+            calendar.refetchEvents();
         }
         document.getElementById('country').addEventListener('change', fetchHolidays);
 
         function initCalendar() {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                initialView: 'dayGridMonth', height: 'auto',
-                headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
-                events: function(info, successCallback, failureCallback) {
-                    let events = [{ daysOfWeek: [0, 6], display: 'background', color: '#198754' }];
-                    publicHolidays.forEach(h => events.push({ title: h.name, start: h.date, allDay: true, color: '#ffc107', textColor: '#000' }));
+                initialView: 'dayGridMonth', height: 'auto', headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+                events: (info, success) => {
+                    let evs = [{ daysOfWeek: [0, 6], display: 'background', color: '#198754' }];
+                    publicHolidays.forEach(h => evs.push({ title: h.name, start: h.date, allDay: true, color: '#ffc107', textColor: '#000' }));
                     state.customHolidays.forEach(h => {
-                        let endD = new Date(h.end); endD.setDate(endD.getDate() + 1);
-                        events.push({ title: h.name, start: h.start, end: endD.toISOString().split('T')[0], color: '#17a2b8', textColor: '#000' });
+                        let eD = new Date(h.end); eD.setDate(eD.getDate() + 1);
+                        evs.push({ title: h.name, start: h.start, end: eD.toISOString().split('T')[0], color: '#17a2b8', textColor: '#000' });
                     });
-                    sickBlocks.forEach((sb, idx) => {
-                        let endD = new Date(sb.end); endD.setDate(endD.getDate() + 1); 
-                        events.push({ title: `${sb.reason} (${sb.missed}d)`, start: sb.start, end: endD.toISOString().split('T')[0], color: '#dc3545' });
+                    sickBlocks.forEach(sb => {
+                        let eD = new Date(sb.end); eD.setDate(eD.getDate() + 1);
+                        evs.push({ title: `${sb.reason} (${sb.missed}d)`, start: sb.start, end: eD.toISOString().split('T')[0], color: '#dc3545' });
                     });
-                    successCallback(events);
+                    success(evs);
                 }
             });
             calendar.render();
         }
 
-        // --- ILLNESS CONFIG TAB LOGIC ---
-        function addCustomExcuse() {
-            const name = document.getElementById('custName').value.trim();
-            const min = parseInt(document.getElementById('custMin').value);
-            const max = parseInt(document.getElementById('custMax').value);
-            const gen = document.getElementById('custGender').value;
-            const mods = document.getElementById('custMods').value.split(',').map(m => m.trim()).filter(m => m);
-            
-            if (!name) return alert("Excuse name required.");
-            
-            const newEx = { min, max, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: mods };
-            if (gen !== "None") newEx.gender = gen;
-
-            state.allSymptoms[name] = newEx;
-            state.activeSymptoms[name] = JSON.parse(JSON.stringify(newEx));
-            
-            document.getElementById('custName').value = ''; document.getElementById('custMods').value = '';
-            renderIllnessConfig();
-            alert(`Added ${name}!`);
-        }
-
         function renderIllnessConfig() {
-            const container = document.getElementById('illness-list');
-            container.innerHTML = '';
-            const currGender = document.getElementById('gender').value;
-
+            const container = document.getElementById('illness-list'); container.innerHTML = '<h3>Excuse Roster</h3>';
+            const gender = document.getElementById('gender').value;
             for (let name in state.allSymptoms) {
-                const data = state.allSymptoms[name];
-                if (currGender === "Male" && data.gender === "Female") continue;
-
-                const isActive = state.activeSymptoms.hasOwnProperty(name);
-                const activeMods = isActive ? (state.activeSymptoms[name].modifiers || []) : [];
-
-                let html = `<div class="card" style="margin-bottom: 10px; padding: 10px;">
-                    <label style="margin-top:0; font-size: 1.1em; color: var(--text-color);">
-                        <input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${isActive ? 'checked' : ''}>
-                        ${name}
-                    </label>`;
-
-                if (data.modifiers && data.modifiers.length > 0) {
-                    html += `<div class="mod-grid" style="display: ${isActive ? 'grid' : 'none'}">`;
-                    data.modifiers.forEach(mod => {
-                        const modChecked = activeMods.includes(mod);
-                        html += `<label style="margin-top:0; font-weight:normal; font-size: 0.85em;"><input type="checkbox" onchange="toggleModifier('${name}', '${mod}', this.checked)" ${modChecked ? 'checked' : ''}> ${mod}</label>`;
-                    });
+                const d = state.allSymptoms[name]; if (gender === "Male" && d.gender === "Female") continue;
+                const active = state.activeSymptoms.hasOwnProperty(name);
+                let html = `<div class="card"><label><input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${active?'checked':''}> ${name}</label>`;
+                if (active && d.modifiers) {
+                    html += `<div class="mod-grid">`;
+                    d.modifiers.forEach(m => html += `<label style="font-weight:normal; font-size:0.8em;"><input type="checkbox" onchange="toggleMod('${name}','${m}',this.checked)" ${state.activeSymptoms[name].modifiers.includes(m)?'checked':''}> ${m}</label>`);
                     html += `</div>`;
                 }
-                html += `</div>`;
-                container.insertAdjacentHTML('beforeend', html);
+                container.insertAdjacentHTML('beforeend', html + `</div>`);
             }
         }
 
-        function toggleIllness(name, isChecked) {
-            if (isChecked) {
-                state.activeSymptoms[name] = JSON.parse(JSON.stringify(state.allSymptoms[name]));
-            } else {
-                delete state.activeSymptoms[name];
-            }
-            renderIllnessConfig();
-        }
+        function toggleIllness(n, c) { if(c) state.activeSymptoms[n] = JSON.parse(JSON.stringify(state.allSymptoms[n])); else delete state.activeSymptoms[n]; renderIllnessConfig(); }
+        function toggleMod(n, m, c) { let mods = state.activeSymptoms[n].modifiers; if(c && !mods.includes(m)) mods.push(m); else if(!c) state.activeSymptoms[n].modifiers = mods.filter(x => x !== m); }
 
-        function toggleModifier(illnessName, modifier, isChecked) {
-            if (!state.activeSymptoms[illnessName]) return;
-            let mods = state.activeSymptoms[illnessName].modifiers;
-            if (isChecked && !mods.includes(modifier)) mods.push(modifier);
-            else if (!isChecked) state.activeSymptoms[illnessName].modifiers = mods.filter(m => m !== modifier);
-        }
-
-        // --- DATA & HOLIDAYS TAB LOGIC ---
         function addCustomHoliday() {
-            const name = document.getElementById('holName').value.trim();
-            const start = document.getElementById('holStart').value;
-            const end = document.getElementById('holEnd').value;
-            if(!name) return;
-            state.customHolidays.push({ name, start, end });
-            document.getElementById('holName').value = '';
-            renderCustomHolidays();
-            calendar.refetchEvents();
+            const n = document.getElementById('holName').value; const s = document.getElementById('holStart').value; const e = document.getElementById('holEnd').value;
+            if(!n || !s || !e) return; state.customHolidays.push({name:n, start:s, end:e});
+            document.getElementById('holName').value = ''; renderHolidaysTable(); calendar.refetchEvents();
         }
-
-        function clearCustomHolidays() {
-            state.customHolidays = [];
-            renderCustomHolidays();
-            calendar.refetchEvents();
-        }
-
-        function renderCustomHolidays() {
-            const tbody = document.querySelector('#holiday-table tbody');
-            tbody.innerHTML = '';
-            state.customHolidays.forEach(h => {
-                tbody.insertAdjacentHTML('beforeend', `<tr><td>${h.name}</td><td>${h.start}</td><td>${h.end}</td></tr>`);
-            });
-        }
-
-        // --- BACKUP & RESTORE ---
-        function exportSettings() {
-            const exportData = {
-                target: document.getElementById('targetDays').value,
-                maxBlock: document.getElementById('maxBlock').value,
-                minGap: document.getElementById('minGap').value,
-                gender: document.getElementById('gender').value,
-                state: state
-            };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-            const node = document.createElement('a');
-            node.setAttribute("href", dataStr); node.setAttribute("download", "scheduler_settings.json");
-            document.body.appendChild(node); node.click(); node.remove();
-        }
-
-        document.getElementById('importFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    document.getElementById('targetDays').value = data.target || 20; document.getElementById('targetValText').innerText = data.target || 20;
-                    document.getElementById('maxBlock').value = data.maxBlock || 7; document.getElementById('maxBlockText').innerText = data.maxBlock || 7;
-                    document.getElementById('minGap').value = data.minGap || 3; document.getElementById('minGapText').innerText = data.minGap || 3;
-                    document.getElementById('gender').value = data.gender || 'Male';
-                    if (data.state) {
-                        state.allSymptoms = data.state.allSymptoms || state.allSymptoms;
-                        state.activeSymptoms = data.state.activeSymptoms || state.activeSymptoms;
-                        state.customHolidays = data.state.customHolidays || [];
-                    }
-                    renderIllnessConfig(); renderCustomHolidays(); calendar.refetchEvents();
-                    alert("Settings imported successfully!");
-                } catch (err) { alert("Invalid JSON file."); }
-            };
-            reader.readAsText(file);
-        });
-
-        // --- ALGORITHM ---
-        function addDays(dateStr, days) { let d = new Date(dateStr); d.setDate(d.getDate() + days); return d.toISOString().split('T')[0]; }
-        function getDaysDiff(d1, d2) { return Math.abs((new Date(d1) - new Date(d2)) / (1000 * 60 * 60 * 24)); }
-        
-        function isWeekendOrHoliday(dateStr) {
-            let d = new Date(dateStr);
-            if (d.getDay() === 0 || d.getDay() === 6) return true;
-            if (publicHolidays.some(h => h.date === dateStr)) return true;
-            // Check Custom Holidays (inclusive)
-            return state.customHolidays.some(h => {
-                const checkTime = d.getTime();
-                return checkTime >= new Date(h.start).getTime() && checkTime <= new Date(h.end).getTime();
-            });
+        function renderHolidaysTable() {
+            const b = document.querySelector('#holiday-table tbody'); b.innerHTML = '';
+            state.customHolidays.forEach(h => b.insertAdjacentHTML('beforeend', `<tr><td>${h.name}</td><td>${h.start}</td><td>${h.end}</td></tr>`));
         }
 
         function generateStrategy() {
-            sickBlocks = []; 
-            const start = document.getElementById('schoolStart').value;
-            const end = document.getElementById('schoolEnd').value;
-            const targetDays = parseInt(document.getElementById('targetDays').value);
-            const maxBlock = parseInt(document.getElementById('maxBlock').value);
-            const minGap = parseInt(document.getElementById('minGap').value);
-            const gender = document.getElementById('gender').value;
+            sickBlocks = []; const start = document.getElementById('schoolStart').value; const end = document.getElementById('schoolEnd').value;
+            const target = parseInt(document.getElementById('targetDays').value); const maxB = parseInt(document.getElementById('maxBlock').value);
+            const gap = parseInt(document.getElementById('minGap').value); const gender = document.getElementById('gender').value;
+            if(window.innerWidth <= 768) toggleSidebar();
 
-            if (window.innerWidth <= 768) toggleSidebar();
-
-            let pool = [];
-            let curr = start;
-            while (new Date(curr) <= new Date(end)) {
-                if (!isWeekendOrHoliday(curr)) pool.push(curr);
-                curr = addDays(curr, 1);
+            let pool = []; let curr = start;
+            while(new Date(curr) <= new Date(end)) {
+                let d = new Date(curr); let isH = publicHolidays.some(h => h.date === curr) || state.customHolidays.some(h => { let ct = d.getTime(); return ct >= new Date(h.start).getTime() && ct <= new Date(h.end).getTime(); });
+                if(d.getDay() !== 0 && d.getDay() !== 6 && !isH) pool.push(curr);
+                curr = new Date(d.setDate(d.getDate()+1)).toISOString().split('T')[0];
             }
 
-            let missed = 0; let iterations = 0;
-            const actSymKeys = Object.keys(state.activeSymptoms);
-
-            while (missed < targetDays && pool.length > 0 && iterations < 1000) {
-                iterations++;
-                let startDateStr = pool[Math.floor(Math.random() * pool.length)];
-                let duration = Math.floor(Math.random() * maxBlock) + 1;
-                
-                let blockSchoolDays = 0; let endDateStr = startDateStr;
-                for (let i = 0; i < duration; i++) {
-                    let testDate = addDays(startDateStr, i);
-                    if (!isWeekendOrHoliday(testDate)) blockSchoolDays++;
-                    endDateStr = testDate;
+            let missed = 0; let its = 0;
+            while(missed < target && pool.length > 0 && its < 1000) {
+                its++; let sD = pool[Math.floor(Math.random()*pool.length)]; let dur = Math.floor(Math.random()*maxB)+1;
+                let bMissed = 0; let eD = sD;
+                for(let i=0; i<dur; i++) {
+                    let tD = new Date(new Date(sD).setDate(new Date(sD).getDate()+i)).toISOString().split('T')[0];
+                    if(pool.includes(tD)) bMissed++; eD = tD;
                 }
+                if(bMissed === 0 || missed + bMissed > target) continue;
+                if(sickBlocks.some(b => { let d1 = Math.abs((new Date(sD)-new Date(b.end))/(864e5)); let d2 = Math.abs((new Date(eD)-new Date(b.start))/(864e5)); return d1 < gap || d2 < gap; })) continue;
 
-                if (blockSchoolDays === 0 || missed + blockSchoolDays > targetDays) continue; 
-                if (sickBlocks.some(b => getDaysDiff(startDateStr, b.end) < minGap || getDaysDiff(endDateStr, b.start) < minGap)) continue;
-
-                let month = new Date(startDateStr).getMonth() + 1;
-                let validIllnesses = actSymKeys.filter(k => {
-                    let s = state.activeSymptoms[k];
-                    if (s.gender && s.gender !== gender) return false;
-                    if (!s.seasons.includes(month)) return false;
-                    if (s.min > duration || s.max < duration) return false;
-                    if (s.is_period) return !sickBlocks.some(b => b.is_period && getDaysDiff(startDateStr, b.start) < 26);
+                let valid = Object.keys(state.activeSymptoms).filter(k => {
+                    let s = state.activeSymptoms[k]; if(s.gender && s.gender !== gender) return false;
+                    if(s.min > dur || s.max < dur) return false;
+                    if(s.is_period) return !sickBlocks.some(b => b.is_period && Math.abs((new Date(sD)-new Date(b.start))/(864e5)) < 26);
                     return true;
                 });
-
-                if (validIllnesses.length === 0) continue;
-
-                let chosenName = validIllnesses[Math.floor(Math.random() * validIllnesses.length)];
-                let illnessData = state.activeSymptoms[chosenName];
-                let reasonStr = chosenName;
-                if (illnessData.modifiers && illnessData.modifiers.length > 0 && Math.random() > 0.3) {
-                    reasonStr += " " + illnessData.modifiers[Math.floor(Math.random() * illnessData.modifiers.length)];
-                }
-
-                sickBlocks.push({ start: startDateStr, end: endDateStr, reason: reasonStr, missed: blockSchoolDays, is_period: illnessData.is_period || false });
-                missed += blockSchoolDays;
-
-                for (let i = 0; i < duration; i++) pool = pool.filter(p => p !== addDays(startDateStr, i));
+                if(!valid.length) continue;
+                let cN = valid[Math.floor(Math.random()*valid.length)]; let cD = state.activeSymptoms[cN];
+                let rS = cN + (cD.modifiers.length && Math.random()>0.3 ? " " + cD.modifiers[Math.floor(Math.random()*cD.modifiers.length)] : "");
+                
+                sickBlocks.push({start:sD, end:eD, reason:rS, missed:bMissed, is_period:cD.is_period});
+                missed += bMissed;
+                for(let i=0; i<dur; i++) { let tD = new Date(new Date(sD).setDate(new Date(sD).getDate()+i)).toISOString().split('T')[0]; pool = pool.filter(p => p !== tD); }
             }
             calendar.refetchEvents();
         }
 
+        function exportSettings() {
+            const d = { target: document.getElementById('targetDays').value, state };
+            const s = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(d));
+            const n = document.createElement('a'); n.setAttribute("href", s); n.setAttribute("download", "settings.json"); n.click();
+        }
         function clearSchedule() { sickBlocks = []; calendar.refetchEvents(); }
     </script>
 </body>
