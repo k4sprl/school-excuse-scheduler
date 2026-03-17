@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>School Excuse Scheduler</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #root { height: 100vh; width: 100vw; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        stlite.mount({
+            requirements: ["pandas", "requests", "pycountry", "streamlit-calendar"],
+            entrypoint: "app.py",
+            files: {
+                // This tells stlite to fetch the app.py file sitting next to index.html in the Github Repo
+                "app.py": {
+                    url: "./app.py", 
+                }
+            }
+        }, document.getElementById("root"));
+    </script>
+</body>
+</html>
