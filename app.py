@@ -8,7 +8,6 @@ from streamlit_calendar import calendar
 import json
 
 # --- 1. STATE INITIALIZATION ---
-# CHANGED: initial_sidebar_state is now "expanded"
 st.set_page_config(page_title="School Excuse Scheduler", layout="wide", initial_sidebar_state="expanded")
 
 DEFAULT_SYMPTOMS = {
@@ -25,29 +24,48 @@ DEFAULT_SYMPTOMS = {
     "Premenstrual Migraine (PMS)": {"min": 1, "max": 2, "seasons": [1,2,3,4,5,6,7,8,9,10,11,12], "gender": "Female", "is_period": True, "modifiers": ["with light sensitivity", "and severe nausea", "with extreme mood fatigue"]}
 }
 
+if "all_symptoms" not in st.session_state: st.session_state.all_symptoms = DEFAULT_SYMPTOMS.copy()
+if "active_symptoms" not in st.session_state: st.session_state.active_symptoms = DEFAULT_SYMPTOMS.copy()
 if "sick_blocks" not in st.session_state: st.session_state.sick_blocks = []
 if "school_start" not in st.session_state: st.session_state.school_start = date.today()
 if "school_end" not in st.session_state: st.session_state.school_end = date.today() + timedelta(days=365)
-
 if "target_val" not in st.session_state: st.session_state.target_val = 20
 if "block_limits" not in st.session_state: st.session_state.block_limits = (1, 7)
 if "min_gap" not in st.session_state: st.session_state.min_gap = 3
 if "public_holidays" not in st.session_state: st.session_state.public_holidays = pd.DataFrame(columns=["Name", "Start", "End", "Type"])
 if "custom_holidays" not in st.session_state: st.session_state.custom_holidays = pd.DataFrame(columns=["Name", "Start", "End", "Type"])
 if "calendar_view_date" not in st.session_state: st.session_state.calendar_view_date = date.today().strftime("%Y-%m-%d")
-if "active_symptoms" not in st.session_state: st.session_state.active_symptoms = DEFAULT_SYMPTOMS.copy()
 if "gender" not in st.session_state: st.session_state.gender = "Male"
 
-# --- 2. CSS & UI COMPACTION ---
-# CHANGED: Removed the display: none for the header so the sidebar button is visible on mobile
+# --- 2. CSS & PRINT LAYOUT COMPACTION ---
 st.markdown("""
 <style>
-/* Pull calendar up and reduce whitespace */
+/* Standard UI adjustments */
 .block-container { padding-top: 2rem !important; padding-bottom: 1rem !important; max-width: 98% !important; }
 header[data-testid="stHeader"] { background-color: transparent !important; } 
-/* Calendar event text wrapping for mobile */
 .fc-event { white-space: normal !important; word-wrap: break-word !important; font-size: 0.85em !important; }
 .fc-toolbar-title { font-size: 1.2em !important; }
+
+/* 🖨️ PRINT-SPECIFIC CSS */
+@media print {
+    /* Hide the sidebar and top header completely */
+    [data-testid="stSidebar"], header[data-testid="stHeader"], [data-testid="stToolbar"] { 
+        display: none !important; 
+    }
+    /* Expand the main content to fill the paper */
+    .main .block-container { 
+        max-width: 100% !important; 
+        width: 100% !important; 
+        padding: 0 !important; 
+        margin: 0 !important; 
+    }
+    /* Force browser to print the background colors of the calendar blocks */
+    * { 
+        -webkit-print-color-adjust: exact !important; 
+        color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -208,21 +226,51 @@ with tab_cal:
             edit_absence_dialog(block_idx)
 
 with tab_sym:
-    st.write("Enable/Disable Excuses & Add-ons")
+    with st.expander("➕ Create Custom Excuse"):
+        with st.form("custom_excuse_form", clear_on_submit=True):
+            c_name = st.text_input("Excuse Name (e.g., Dental Surgery)")
+            c1, c2 = st.columns(2)
+            c_min, c_max = c1.slider("Duration (Min/Max days)", 1, 14, (1, 3))
+            c_gender = c2.selectbox("Gender Limitation", ["None", "Male", "Female"])
+            c_mods = st.text_input("Modifiers (comma-separated, e.g., requiring rest, with swelling)")
+            
+            if st.form_submit_button("Add Excuse to Roster"):
+                if c_name:
+                    new_excuse = {
+                        "min": c_min, "max": c_max,
+                        "seasons": [1,2,3,4,5,6,7,8,9,10,11,12],
+                        "is_period": False,
+                        "modifiers": [m.strip() for m in c_mods.split(",")] if c_mods else []
+                    }
+                    if c_gender != "None": new_excuse["gender"] = c_gender
+                        
+                    st.session_state.all_symptoms[c_name] = new_excuse
+                    st.session_state.active_symptoms[c_name] = new_excuse
+                    st.success(f"Added {c_name}!")
+                    st.rerun()
+
+    st.write("Enable/Disable Excuses & Modifiers")
     updated_symptoms = {}
-    for illness_name, data in DEFAULT_SYMPTOMS.items():
+    
+    # Iterate over all registered symptoms (defaults + custom)
+    for illness_name, data in st.session_state.all_symptoms.items():
         if st.session_state.gender == "Male" and data.get("gender") == "Female": continue
+        
         if st.checkbox(f"**{illness_name}**", value=illness_name in st.session_state.active_symptoms):
             active_mods = []
-            curr_mods = st.session_state.active_symptoms.get(illness_name, data).get("modifiers", data["modifiers"])
-            cols = st.columns(3)
-            for i, mod_text in enumerate(data["modifiers"]):
-                if cols[i%3].checkbox(mod_text, value=(mod_text in curr_mods), key=f"mod_{illness_name}_{i}"):
-                    active_mods.append(mod_text)
+            curr_mods = st.session_state.active_symptoms.get(illness_name, data).get("modifiers", data.get("modifiers", []))
+            
+            if data.get("modifiers"):
+                cols = st.columns(3)
+                for i, mod_text in enumerate(data["modifiers"]):
+                    if cols[i%3].checkbox(mod_text, value=(mod_text in curr_mods), key=f"mod_{illness_name}_{i}"):
+                        active_mods.append(mod_text)
+                        
             new_data = data.copy()
             new_data["modifiers"] = active_mods
             updated_symptoms[illness_name] = new_data
         st.divider()
+        
     st.session_state.active_symptoms = updated_symptoms
 
 with tab_data:
@@ -243,7 +291,15 @@ with tab_data:
                 st.rerun()
     with col2:
         st.subheader("Settings Backup")
-        export_data = {"target": st.session_state.target_val, "limits": st.session_state.block_limits, "gap": st.session_state.min_gap, "gender": st.session_state.gender, "sym": st.session_state.active_symptoms}
+        # Export now includes the all_symptoms database alongside active selections
+        export_data = {
+            "target": st.session_state.target_val, 
+            "limits": st.session_state.block_limits, 
+            "gap": st.session_state.min_gap, 
+            "gender": st.session_state.gender, 
+            "all_sym": st.session_state.all_symptoms,
+            "sym": st.session_state.active_symptoms
+        }
         st.download_button("Export Settings (JSON)", json.dumps(export_data, indent=4), "settings.json", "application/json", use_container_width=True)
         uploaded = st.file_uploader("Import Settings (JSON)", type="json")
         if uploaded:
@@ -252,5 +308,6 @@ with tab_data:
             st.session_state.block_limits = tuple(data.get("limits", (1,7)))
             st.session_state.min_gap = data.get("gap", 3)
             st.session_state.gender = data.get("gender", "Male")
+            st.session_state.all_symptoms = data.get("all_sym", DEFAULT_SYMPTOMS.copy())
             st.session_state.active_symptoms = data.get("sym", DEFAULT_SYMPTOMS.copy())
             st.success("Loaded! Please interact with a widget to refresh.")
