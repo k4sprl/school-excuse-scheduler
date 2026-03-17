@@ -13,8 +13,6 @@
             --border: #333333;
             --primary: #ff4b4b;
             --input-bg: #2c2c2c;
-            --disclaimer-bg: #3a0e0e;
-            --disclaimer-text: #ff6b6b;
             --anim-female: #ff69b4;
             --anim-male: #1e90ff;
             --card-bg: #242424;
@@ -22,29 +20,24 @@
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { margin: 0; display: flex; background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; position: relative; }
         
-        #disclaimer {
-            background-color: var(--disclaimer-bg); color: var(--disclaimer-text); text-align: center; padding: 10px; 
-            font-weight: bold; width: 100%; position: absolute; top: 0; z-index: 1000;
-            border-bottom: 2px solid var(--disclaimer-text);
+        /* Modal Overlay */
+        #startupModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 10000; display: flex; 
+            align-items: center; justify-content: center; backdrop-filter: blur(5px);
         }
+        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; max-width: 500px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-content h2 { color: var(--primary); margin-top: 0; }
+        .modal-content ul { padding-left: 20px; line-height: 1.6; }
 
-        #mobile-menu-btn {
-            display: none; position: fixed; top: 50px; left: 10px; z-index: 1001; 
-            background: var(--sidebar-bg); color: var(--text-color); border: 1px solid var(--border); 
-            padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 1.2em;
-        }
-
-        .sidebar { 
-            width: 320px; min-width: 250px; background: var(--sidebar-bg); padding: 60px 20px 20px; 
-            overflow-y: auto; height: 100%; z-index: 100; display: flex; flex-direction: column;
-        }
+        #mobile-menu-btn { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; background: var(--sidebar-bg); color: var(--text-color); border: 1px solid var(--border); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 1.2em; }
+        .sidebar { width: 320px; min-width: 250px; background: var(--sidebar-bg); padding: 30px 20px 20px; overflow-y: auto; height: 100%; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid var(--border);}
         #close-sidebar-btn { display: none; }
-        
         .resizer { width: 6px; background: var(--border); cursor: col-resize; z-index: 10; flex-shrink: 0; transition: background 0.2s; }
         .resizer:hover, .resizer.active { background: var(--primary); }
-        .main-content { flex-grow: 1; padding: 60px 20px 20px; overflow-y: auto; height: 100%; position: relative; min-width: 0; }
+        .main-content { flex-grow: 1; padding: 30px 20px 20px; overflow-y: auto; height: 100%; position: relative; min-width: 0; }
         
-        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9em; color: #bbb;}
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9em; color: #bbb; transition: color 0.3s;}
         input, select { width: 100%; padding: 8px; margin-top: 5px; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border); border-radius: 4px; }
         input[type="range"] { accent-color: var(--primary); }
         input[type="checkbox"] { width: auto; margin-right: 8px; transform: scale(1.2); accent-color: var(--primary);}
@@ -52,22 +45,19 @@
         button:hover { opacity: 0.9; }
         .btn-secondary { background-color: #444; }
         
+        /* Gender UI */
+        .gender-container { display: flex; gap: 20px; font-weight: bold; font-size: 1.2em; margin-top: 8px; }
+        .gender-btn { cursor: pointer; transition: 0.2s; color: #555; }
+        .gender-btn.active-male { color: var(--anim-male); text-shadow: 0 0 10px rgba(30,144,255,0.4); }
+        .gender-btn.active-female { color: var(--anim-female); text-shadow: 0 0 10px rgba(255,105,180,0.4); }
+
         /* Dual Slider CSS */
         .dual-slider-container { position: relative; width: 100%; height: 30px; margin-top: 10px; }
-        .dual-slider-track { position: absolute; width: 100%; height: 4px; background: var(--input-bg); top: 13px; border-radius: 2px; z-index: 1; }
-        .dual-slider-fill { position: absolute; height: 100%; background: var(--primary); border-radius: 2px; z-index: 2; }
-        .dual-slider-container input[type="range"] {
-            position: absolute; width: 100%; top: 0; left: 0; margin: 0; background: none; 
-            pointer-events: none; z-index: 3; -webkit-appearance: none; height: 30px;
-        }
-        .dual-slider-container input[type="range"]::-webkit-slider-thumb {
-            pointer-events: auto; -webkit-appearance: none; width: 16px; height: 16px; 
-            border-radius: 50%; background: white; border: 2px solid var(--primary); cursor: pointer;
-        }
-        .dual-slider-container input[type="range"]::-moz-range-thumb {
-            pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; 
-            background: white; border: 2px solid var(--primary); cursor: pointer;
-        }
+        .dual-slider-track { position: absolute; width: 100%; height: 6px; background: var(--input-bg); top: 12px; border-radius: 3px; z-index: 1; }
+        .dual-slider-fill { position: absolute; height: 100%; background: var(--primary); border-radius: 3px; z-index: 2; }
+        .dual-slider-container input[type="range"] { position: absolute; width: 100%; top: 0; left: 0; margin: 0; background: none; pointer-events: none; z-index: 3; -webkit-appearance: none; height: 30px; }
+        .dual-slider-container input[type="range"]::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; }
+        .dual-slider-container input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid var(--primary); cursor: pointer; }
 
         .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto;}
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; white-space: nowrap;}
@@ -82,19 +72,18 @@
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
         th { background: var(--input-bg); }
 
+        /* Calendar Tweaks for 1-31 display only */
         #calendar { background: var(--sidebar-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .fc { 
-            --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); 
-            --fc-border-color: var(--border); --fc-button-text-color: var(--text-color);
-            --fc-button-bg-color: var(--input-bg); --fc-button-border-color: var(--border);
-        }
+        .fc { --fc-page-bg-color: var(--sidebar-bg); --fc-neutral-bg-color: var(--bg-color); --fc-border-color: var(--border); --fc-button-text-color: var(--text-color); --fc-button-bg-color: var(--input-bg); --fc-button-border-color: var(--border); }
         .fc-col-header-cell-cushion, .fc-daygrid-day-number { color: var(--text-color); text-decoration: none; }
+        .fc-day-other { visibility: hidden; } /* Hides days from previous/next months */
 
+        /* Bigger, Slower Gender Flash */
         #border-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; box-shadow: inset 0 0 0px transparent; }
-        .flash-female { animation: flashPink 0.8s ease-out; }
-        .flash-male { animation: flashBlue 0.8s ease-out; }
-        @keyframes flashPink { 0% { box-shadow: inset 0 0 30px 10px var(--anim-female); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
-        @keyframes flashBlue { 0% { box-shadow: inset 0 0 30px 10px var(--anim-male); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
+        .flash-female { animation: flashPink 2s ease-out; }
+        .flash-male { animation: flashBlue 2s ease-out; }
+        @keyframes flashPink { 0% { box-shadow: inset 0 0 80px 20px var(--anim-female); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
+        @keyframes flashBlue { 0% { box-shadow: inset 0 0 80px 20px var(--anim-male); } 100% { box-shadow: inset 0 0 0px 0px transparent; } }
 
         @media (max-width: 768px) {
             #mobile-menu-btn { display: block; }
@@ -102,15 +91,26 @@
             .sidebar { position: fixed; left: -100%; top: 0; width: 100% !important; height: 100%; transition: left 0.3s ease; z-index: 2000; padding-top: 50px; }
             .sidebar.open { left: 0; }
             #close-sidebar-btn { display: block; background: transparent; color: var(--text-color); border: none; font-size: 32px; position: absolute; top: 10px; right: 20px; width: auto; cursor: pointer; }
-            .main-content { padding-top: 100px; }
+            .main-content { padding-top: 60px; }
             .grid-2 { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
+    <div id="startupModal">
+        <div class="modal-content">
+            <h2>⚠️ Important Notice</h2>
+            <ul>
+                <li><strong>Educational Use Only:</strong> This tool is a logistical simulation. It must not be used to skip school or commit truancy.</li>
+                <li><strong>Privacy First:</strong> This tool runs entirely offline in your browser. It <b>does not</b> track you, collect data, or send your schedule anywhere.</li>
+                <li><strong>Verify Your Data:</strong> Always double-check generated dates, school holidays, and settings before utilizing any information.</li>
+            </ul>
+            <button onclick="document.getElementById('startupModal').style.display='none'">I Understand & Agree</button>
+        </div>
+    </div>
+
     <div id="border-flash"></div>
-    <div id="disclaimer">⚠️ FOR EDUCATIONAL PURPOSES ONLY. This tool is for logistical planning simulations.</div>
     <button id="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
 
     <div class="sidebar" id="sidebar">
@@ -119,12 +119,19 @@
         
         <label>School Start Date</label><input type="date" id="schoolStart">
         <label>School End Date</label><input type="date" id="schoolEnd">
-        <label>Country (Holidays)</label><select id="country"><option value="CH">Loading...</option></select>
-        <label>Student Gender</label>
-        <select id="gender">
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select>
+        
+        <label>Country</label>
+        <input type="text" id="country" list="countryList" placeholder="Search or type any country...">
+        <datalist id="countryList"></datalist>
+
+        <label>State / Province</label>
+        <input type="text" id="state" placeholder="Search or type state...">
+        
+        <label id="genderLabel" style="color: var(--anim-male);">Gender</label>
+        <div class="gender-container">
+            <span id="btnMale" class="gender-btn active-male" onclick="setGender('Male')">Male</span>
+            <span id="btnFemale" class="gender-btn" onclick="setGender('Female')">Female</span>
+        </div>
 
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
 
@@ -133,11 +140,9 @@
         
         <label>Sick Block Length: <span id="blockRangeText" style="color:var(--text-color)">1 - 7</span> days</label>
         <div class="dual-slider-container">
-            <div class="dual-slider-track">
-                <div class="dual-slider-fill" id="blockSliderFill"></div>
-            </div>
-            <input type="range" id="minBlock" min="1" max="14" value="1" oninput="updateDualSlider()">
-            <input type="range" id="maxBlock" min="1" max="14" value="7" oninput="updateDualSlider()">
+            <div class="dual-slider-track"><div class="dual-slider-fill" id="blockSliderFill"></div></div>
+            <input type="range" id="minBlock" min="1" max="7" value="1" oninput="updateDualSlider('minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
+            <input type="range" id="maxBlock" min="1" max="7" value="7" oninput="updateDualSlider('minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText')">
         </div>
 
         <label>Min Gap (Days): <span id="minGapText" style="color:var(--text-color)">3</span></label>
@@ -164,11 +169,15 @@
             <div class="card">
                 <h3 style="margin-top:0;">➕ Custom Excuse</h3>
                 <input type="text" id="custName" placeholder="Excuse Name">
-                <div class="grid-2">
-                    <div><label>Min Days</label><input type="number" id="custMin" value="1"></div>
-                    <div><label>Max Days</label><input type="number" id="custMax" value="3"></div>
+                
+                <label>Excuse Duration: <span id="custBlockRangeText" style="color:var(--text-color)">1 - 3</span> days</label>
+                <div class="dual-slider-container" style="max-width: 400px; margin-bottom: 20px;">
+                    <div class="dual-slider-track"><div class="dual-slider-fill" id="custBlockSliderFill"></div></div>
+                    <input type="range" id="custMin" min="1" max="7" value="1" oninput="updateDualSlider('custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
+                    <input type="range" id="custMax" min="1" max="7" value="3" oninput="updateDualSlider('custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText')">
                 </div>
-                <button onclick="addCustomExcuse()">Add to Roster</button>
+                
+                <button onclick="addCustomExcuse()" style="max-width: 400px;">Add to Roster</button>
             </div>
             <div id="illness-list"></div>
         </div>
@@ -177,7 +186,7 @@
             <div class="grid-2">
                 <div class="card">
                     <h3 style="margin-top:0;">🏫 School Holiday Periods</h3>
-                    <p style="font-size: 0.8em; color: #aaa;">Add periods where school is closed (Spring Break, etc.).</p>
+                    <p style="font-size: 0.8em; color: #aaa;">Add periods where school is closed.</p>
                     <input type="text" id="holName" placeholder="e.g., Autumn Break">
                     <div class="grid-2">
                         <div><label>Start</label><input type="date" id="holStart"></div>
@@ -189,7 +198,7 @@
                 <div class="card">
                     <h3 style="margin-top:0;">💾 Backup</h3>
                     <button onclick="exportSettings()">Export JSON</button>
-                    <label style="margin-top:20px;">Import JSON</button>
+                    <label style="margin-top:20px;">Import JSON</label>
                     <input type="file" id="importFile" accept=".json">
                 </div>
             </div>
@@ -197,34 +206,69 @@
     </div>
 
     <script>
-        // --- DUAL SLIDER LOGIC ---
-        function updateDualSlider() {
-            let minVal = parseInt(document.getElementById("minBlock").value);
-            let maxVal = parseInt(document.getElementById("maxBlock").value);
+        // --- GENDER & UI LOGIC ---
+        let currentGender = "Male";
+        function setGender(gender) {
+            currentGender = gender;
+            const lbl = document.getElementById("genderLabel");
+            const btnM = document.getElementById("btnMale");
+            const btnF = document.getElementById("btnFemale");
+            const f = document.getElementById('border-flash'); 
             
-            // Prevent knots from crossing over each other
+            f.className = ''; void f.offsetWidth; // Reset animation
+
+            if(gender === "Male") {
+                lbl.style.color = "var(--anim-male)";
+                btnM.classList.add("active-male");
+                btnF.classList.remove("active-female");
+                f.classList.add('flash-male');
+            } else {
+                lbl.style.color = "var(--anim-female)";
+                btnF.classList.add("active-female");
+                btnM.classList.remove("active-male");
+                f.classList.add('flash-female');
+            }
+            renderIllnessConfig();
+        }
+
+        // --- DUAL SLIDER LOGIC ---
+        function updateDualSlider(minId, maxId, fillId, textId) {
+            let minNode = document.getElementById(minId);
+            let maxNode = document.getElementById(maxId);
+            let minVal = parseInt(minNode.value);
+            let maxVal = parseInt(maxNode.value);
+            
+            // Push knots instead of crossing over
             if (minVal > maxVal) {
-                let tmp = minVal;
-                minVal = maxVal;
-                maxVal = tmp;
-                document.getElementById("minBlock").value = minVal;
-                document.getElementById("maxBlock").value = maxVal;
+                if (document.activeElement === minNode) maxNode.value = minVal;
+                else minNode.value = maxVal;
+                minVal = parseInt(minNode.value);
+                maxVal = parseInt(maxNode.value);
             }
             
-            document.getElementById("blockRangeText").innerText = `${minVal} - ${maxVal}`;
+            document.getElementById(textId).innerText = `${minVal} - ${maxVal}`;
             
-            // Update the colored track fill
-            const maxLimit = 14; 
-            const minLimit = 1;
+            const maxLimit = 7; const minLimit = 1;
             let percent1 = ((minVal - minLimit) / (maxLimit - minLimit)) * 100;
             let percent2 = ((maxVal - minLimit) / (maxLimit - minLimit)) * 100;
             
-            const fill = document.getElementById("blockSliderFill");
+            const fill = document.getElementById(fillId);
             fill.style.left = percent1 + "%";
             fill.style.width = (percent2 - percent1) + "%";
         }
-        // Initialize dual slider UI
-        updateDualSlider();
+        updateDualSlider('minBlock', 'maxBlock', 'blockSliderFill', 'blockRangeText');
+        updateDualSlider('custMin', 'custMax', 'custBlockSliderFill', 'custBlockRangeText');
+
+        // --- GLOBAL COUNTRY INJECTION ---
+        // A substantial unbiased list including regions commonly omitted by APIs.
+        const globalCountries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Australia","Austria","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Bhutan","Bolivia","Bosnia and Herzegovina","Brazil","Bulgaria","Cambodia","Cameroon","Canada","Chile","China","Colombia","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Dominican Republic","Ecuador","Egypt","El Salvador","Estonia","Ethiopia","Fiji","Finland","France","Georgia","Germany","Ghana","Greece","Guatemala","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kosovo","Kuwait","Latvia","Lebanon","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malaysia","Maldives","Malta","Mexico","Moldova","Monaco","Mongolia","Montenegro","Morocco","Myanmar","Nepal","Netherlands","New Zealand","Nicaragua","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palestine","Panama","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","San Marino","Saudi Arabia","Senegal","Serbia","Singapore","Slovakia","Slovenia","Somalia","South Africa","South Korea","Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria","Taiwan","Tanzania","Thailand","Tunisia","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+        
+        const dl = document.getElementById('countryList');
+        globalCountries.forEach(c => {
+            let opt = document.createElement('option');
+            opt.value = c;
+            dl.appendChild(opt);
+        });
 
         // --- DATA ---
         const DEFAULT_SYMPTOMS = {
@@ -235,14 +279,14 @@
             "Influenza (Flu)": { min: 4, max: 7, seasons: [11,12,1,2,3], is_period: false, modifiers: ["high fever", "body aches"] },
             "Sprained Ankle": { min: 3, max: 7, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: ["requiring rest", "swelling"] },
             "Menstrual Pain (Dysmenorrhea)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["severe cramping", "bed rest"] },
-            "Heavy Flow & Fatigue (Menorrhagia/Anemia)": { min: 1, max: 3, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["extreme exhaustion", "severe dizziness"] },
-            "Premenstrual Fatigue & Migraine (PMS)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["nausea", "mood fatigue"] }
+            "Heavy Flow & Fatigue": { min: 1, max: 3, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["extreme exhaustion", "severe dizziness"] },
+            "Premenstrual Fatigue (PMS)": { min: 1, max: 2, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], gender: "Female", is_period: true, modifiers: ["nausea", "mood fatigue"] }
         };
 
         let state = { allSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), activeSymptoms: JSON.parse(JSON.stringify(DEFAULT_SYMPTOMS)), customHolidays: [] };
         let sickBlocks = []; let publicHolidays = []; let calendar;
 
-        // --- UI LOGIC ---
+        // --- RESIZE LOGIC ---
         const resizer = document.getElementById('resizer'); const sidebar = document.getElementById('sidebar'); let isResizing = false;
         resizer.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'col-resize'; });
         document.addEventListener('mousemove', (e) => { if (isResizing && e.clientX > 200 && e.clientX < window.innerWidth - 300) sidebar.style.width = e.clientX + 'px'; });
@@ -250,42 +294,40 @@
         function toggleSidebar() { sidebar.classList.toggle('open'); if (calendar) setTimeout(() => calendar.render(), 300); }
         function switchTab(tabId) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active'); document.getElementById('tab-' + tabId).classList.add('active'); if(tabId === 'cal') calendar.render(); }
 
-        document.getElementById('gender').addEventListener('change', (e) => {
-            const f = document.getElementById('border-flash'); f.className = ''; void f.offsetWidth;
-            f.classList.add(e.target.value === 'Female' ? 'flash-female' : 'flash-male');
-            renderIllnessConfig();
-        });
-
-        // --- CORE ---
+        // --- INIT ---
         document.addEventListener('DOMContentLoaded', async () => {
             const t = new Date(); document.getElementById('schoolStart').valueAsDate = t;
             const n = new Date(); n.setFullYear(t.getFullYear() + 1); document.getElementById('schoolEnd').valueAsDate = n;
-            await loadCountries(); initCalendar(); renderIllnessConfig();
+            initCalendar(); renderIllnessConfig();
         });
 
-        async function loadCountries() {
-            const res = await fetch('https://date.nager.at/api/v3/AvailableCountries');
-            const countries = await res.json();
-            const sel = document.getElementById('country'); sel.innerHTML = '';
-            countries.sort((a,b) => a.name.localeCompare(b.name)).forEach(c => {
-                let opt = document.createElement('option'); opt.value = c.countryCode; opt.textContent = c.name;
-                if(c.countryCode === 'CH') opt.selected = true; sel.appendChild(opt);
-            });
-            fetchHolidays();
-        }
-
-        async function fetchHolidays() {
-            const cc = document.getElementById('country').value;
-            const year = new Date(document.getElementById('schoolStart').value).getFullYear();
-            const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${cc}`);
-            publicHolidays = (await res.json()).map(h => ({ name: h.name, date: h.date }));
-            calendar.refetchEvents();
-        }
-        document.getElementById('country').addEventListener('change', fetchHolidays);
+        // Try to fetch holidays if Nager.date supports the typed country
+        document.getElementById('country').addEventListener('change', async () => {
+            try {
+                const year = new Date(document.getElementById('schoolStart').value).getFullYear();
+                // We do a rough lookup based on name. If it fails, we fail silently to preserve the user's manual input.
+                const res = await fetch(`https://date.nager.at/api/v3/AvailableCountries`);
+                const countries = await res.json();
+                const typed = document.getElementById('country').value.toLowerCase();
+                const match = countries.find(c => c.name.toLowerCase() === typed);
+                
+                if(match) {
+                    const hRes = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${match.countryCode}`);
+                    publicHolidays = (await hRes.json()).map(h => ({ name: h.name, date: h.date }));
+                    calendar.refetchEvents();
+                } else {
+                    publicHolidays = []; calendar.refetchEvents();
+                }
+            } catch(e) {}
+        });
 
         function initCalendar() {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                initialView: 'dayGridMonth', height: 'auto', headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+                initialView: 'dayGridMonth', height: 'auto', 
+                firstDay: 1, // Start on Monday
+                showNonCurrentDates: false, // Hide prev/next month overflow
+                fixedWeekCount: false, // Don't force 6 rows
+                headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
                 events: (info, success) => {
                     let evs = [{ daysOfWeek: [0, 6], display: 'background', color: '#198754' }];
                     publicHolidays.forEach(h => evs.push({ title: h.name, start: h.date, allDay: true, color: '#ffc107', textColor: '#000' }));
@@ -305,11 +347,10 @@
 
         function renderIllnessConfig() {
             const container = document.getElementById('illness-list'); container.innerHTML = '<h3>Excuse Roster</h3>';
-            const gender = document.getElementById('gender').value;
             for (let name in state.allSymptoms) {
-                const d = state.allSymptoms[name]; if (gender === "Male" && d.gender === "Female") continue;
+                const d = state.allSymptoms[name]; if (currentGender === "Male" && d.gender === "Female") continue;
                 const active = state.activeSymptoms.hasOwnProperty(name);
-                let html = `<div class="card"><label><input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${active?'checked':''}> ${name}</label>`;
+                let html = `<div class="card"><label><input type="checkbox" onchange="toggleIllness('${name}', this.checked)" ${active?'checked':''}> ${name} <span style="font-size:0.8em; color:#888;">(${d.min}-${d.max}d)</span></label>`;
                 if (active && d.modifiers) {
                     html += `<div class="mod-grid">`;
                     d.modifiers.forEach(m => html += `<label style="font-weight:normal; font-size:0.8em;"><input type="checkbox" onchange="toggleMod('${name}','${m}',this.checked)" ${state.activeSymptoms[name].modifiers.includes(m)?'checked':''}> ${m}</label>`);
@@ -321,6 +362,19 @@
 
         function toggleIllness(n, c) { if(c) state.activeSymptoms[n] = JSON.parse(JSON.stringify(state.allSymptoms[n])); else delete state.activeSymptoms[n]; renderIllnessConfig(); }
         function toggleMod(n, m, c) { let mods = state.activeSymptoms[n].modifiers; if(c && !mods.includes(m)) mods.push(m); else if(!c) state.activeSymptoms[n].modifiers = mods.filter(x => x !== m); }
+
+        function addCustomExcuse() {
+            const name = document.getElementById('custName').value.trim();
+            const min = parseInt(document.getElementById('custMin').value);
+            const max = parseInt(document.getElementById('custMax').value);
+            if (!name) return alert("Please enter an excuse name.");
+            
+            const newEx = { min, max, seasons: [1,2,3,4,5,6,7,8,9,10,11,12], is_period: false, modifiers: [] };
+            state.allSymptoms[name] = newEx;
+            state.activeSymptoms[name] = JSON.parse(JSON.stringify(newEx));
+            document.getElementById('custName').value = '';
+            renderIllnessConfig();
+        }
 
         function addCustomHoliday() {
             const n = document.getElementById('holName').value; const s = document.getElementById('holStart').value; const e = document.getElementById('holEnd').value;
@@ -335,12 +389,9 @@
         function generateStrategy() {
             sickBlocks = []; const start = document.getElementById('schoolStart').value; const end = document.getElementById('schoolEnd').value;
             const target = parseInt(document.getElementById('targetDays').value); 
-            
-            // GRAB MIN AND MAX FROM DUAL SLIDER
             const minB = parseInt(document.getElementById('minBlock').value);
             const maxB = parseInt(document.getElementById('maxBlock').value);
-            
-            const gap = parseInt(document.getElementById('minGap').value); const gender = document.getElementById('gender').value;
+            const gap = parseInt(document.getElementById('minGap').value);
             if(window.innerWidth <= 768) toggleSidebar();
 
             let pool = []; let curr = start;
@@ -353,10 +404,7 @@
             let missed = 0; let its = 0;
             while(missed < target && pool.length > 0 && its < 1000) {
                 its++; let sD = pool[Math.floor(Math.random()*pool.length)]; 
-                
-                // RANDOM DURATION BETWEEN MIN AND MAX KNOTS
                 let dur = Math.floor(Math.random() * (maxB - minB + 1)) + minB;
-                
                 let bMissed = 0; let eD = sD;
                 for(let i=0; i<dur; i++) {
                     let tD = new Date(new Date(sD).setDate(new Date(sD).getDate()+i)).toISOString().split('T')[0];
@@ -366,14 +414,14 @@
                 if(sickBlocks.some(b => { let d1 = Math.abs((new Date(sD)-new Date(b.end))/(864e5)); let d2 = Math.abs((new Date(eD)-new Date(b.start))/(864e5)); return d1 < gap || d2 < gap; })) continue;
 
                 let valid = Object.keys(state.activeSymptoms).filter(k => {
-                    let s = state.activeSymptoms[k]; if(s.gender && s.gender !== gender) return false;
+                    let s = state.activeSymptoms[k]; if(s.gender && s.gender !== currentGender) return false;
                     if(s.min > dur || s.max < dur) return false;
                     if(s.is_period) return !sickBlocks.some(b => b.is_period && Math.abs((new Date(sD)-new Date(b.start))/(864e5)) < 26);
                     return true;
                 });
                 if(!valid.length) continue;
                 let cN = valid[Math.floor(Math.random()*valid.length)]; let cD = state.activeSymptoms[cN];
-                let rS = cN + (cD.modifiers.length && Math.random()>0.3 ? " " + cD.modifiers[Math.floor(Math.random()*cD.modifiers.length)] : "");
+                let rS = cN + (cD.modifiers && cD.modifiers.length && Math.random()>0.3 ? " " + cD.modifiers[Math.floor(Math.random()*cD.modifiers.length)] : "");
                 
                 sickBlocks.push({start:sD, end:eD, reason:rS, missed:bMissed, is_period:cD.is_period});
                 missed += bMissed;
