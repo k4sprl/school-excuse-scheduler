@@ -52,8 +52,8 @@
         button { background-color: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; text-transform: uppercase; transition: 0.2s;}
         button:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-secondary { background-color: #444; }
-        .icon-btn { background: transparent; border: 1px solid var(--border); width: auto; padding: 8px 12px; margin: 0; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;}
-        .icon-btn:hover { background: var(--input-bg); }
+        .icon-btn { background: transparent; border: 1px solid var(--border); color: #e0e0e0; width: auto; padding: 8px 12px; margin: 0; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;}
+        .icon-btn:hover { background: var(--input-bg); color: white;}
 
         .gender-container { display: flex; gap: 20px; font-weight: bold; font-size: 1.2em; margin-top: 8px; }
         .gender-btn { cursor: pointer; padding: 5px 10px; border-radius: 6px; color: #555;}
@@ -67,9 +67,12 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .stats-container { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;}
-        .stat-card { flex: 1; min-width: 110px; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 15px; border-radius: 8px; text-align: center;}
+        /* Dashboard Stats */
+        .stats-container { display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 10px;}
+        .stat-card { flex: 1; min-width: 120px; background: var(--sidebar-bg); border: 1px solid var(--border); padding: 15px; border-radius: 8px; text-align: center; white-space: nowrap;}
+        .stat-card.highlight { border-color: var(--primary); background: rgba(255, 75, 75, 0.05); }
         .stat-value { font-size: 1.8em; font-weight: bold; color: white; }
+        .stat-card.highlight .stat-value { color: var(--primary); }
         .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase;}
 
         .card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; }
@@ -97,7 +100,7 @@
 
         @media print {
             body { background: #fff !important; color: #000 !important; }
-            .sidebar, .tabs, .icon-btn, #mobile-menu-btn, .toast-container, .modal-overlay, #chartContainer { display: none !important; }
+            .sidebar, .tabs, .icon-btn, .header-buttons, #mobile-menu-btn, .toast-container, .modal-overlay, #chartContainer { display: none !important; }
             .main-content { padding: 0 !important; }
             .stat-card { border: 1px solid #ccc !important; background: #fff !important; }
             .stat-value { color: #000 !important; }
@@ -122,7 +125,8 @@
     <div id="qrModal" class="modal-overlay" onclick="closeOutside(event, 'qrModal')">
         <div class="modal-content" style="text-align: center; max-width: 350px;">
             <span class="close-modal-x" onclick="closeModal('qrModal')">×</span>
-            <h3>Share via QR</h3>
+            <h3 id="qrModalTitle">Share Link</h3>
+            <p id="qrModalDesc" style="font-size: 0.9em; color: #aaa;">Scan QR code on another device.</p>
             <div id="qrcode" style="display:flex; justify-content:center; background:#fff; padding:15px; border-radius:8px;"></div>
         </div>
     </div>
@@ -138,7 +142,7 @@
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
-    <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+    <button id="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menu</button>
 
     <div class="sidebar" id="sidebar">
         <h3 style="margin-top:0;">🗓️ Settings</h3>
@@ -191,8 +195,8 @@
         </div>
 
         <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="undo()" style="margin:0; background:#444;">↩️</button>
-            <button onclick="redo()" style="margin:0; background:#444;">↪️</button>
+            <button onclick="undo()" style="margin:0; background:#444;" title="Undo">↩️</button>
+            <button onclick="redo()" style="margin:0; background:#444;" title="Redo">↪️</button>
             <button onclick="generateStrategy()" style="margin:0; flex-grow:1;">Generate</button>
         </div>
         <button class="btn-secondary" onclick="clearSchedule()">Clear Schedule</button>
@@ -207,16 +211,19 @@
                 <div class="tab" onclick="switchTab('sym')">⚙️ Excuses</div>
                 <div class="tab" onclick="switchTab('data')">📁 Dates & Data</div>
             </div>
-            <div style="display:flex; gap:10px;">
+            <div class="header-buttons" style="display:flex; gap:10px;">
+                <button class="icon-btn" onclick="openAppQR()">📱 App QR</button>
+                <button class="icon-btn" onclick="shareDataLink()">🔗 Share Data</button>
                 <button class="icon-btn" onclick="exportICS()">📅 .ICS</button>
-                <button class="icon-btn" onclick="shareLink()">🔗 Share</button>
                 <button class="icon-btn" onclick="openModal('printModal')">🖨️ Print</button>
             </div>
         </div>
 
         <div id="tab-cal" class="tab-content active">
             <div class="stats-container">
-                <div class="stat-card"><div class="stat-value" id="statDays">0</div><div class="stat-label">School Days</div></div>
+                <div class="stat-card"><div class="stat-value" id="statDaysPassed">0</div><div class="stat-label">Days Passed</div></div>
+                <div class="stat-card"><div class="stat-value" id="statSchoolLeft">0</div><div class="stat-label">School Days Left</div></div>
+                <div class="stat-card highlight"><div class="stat-value" id="statAttendingLeft">0</div><div class="stat-label">Attending (Left)</div></div>
                 <div class="stat-card"><div class="stat-value" id="statMissed" style="color:var(--primary)">0</div><div class="stat-label">Days Missed</div></div>
                 <div class="stat-card"><div class="stat-value" id="statScore">100%</div><div class="stat-label">Believability</div></div>
                 <div class="stat-card"><div class="stat-value" id="statDocs">0</div><div class="stat-label">Doc Notes Req.</div></div>
@@ -273,16 +280,17 @@
         const getWeekends = () => document.getElementById('weekendType').value.split(',').map(Number);
         const isWeekend = (dStr) => getWeekends().includes(sDate(dStr).getDay());
 
+        // Extremely vibrant & distinct colors so nothing is confused with Red
         const DEFAULT_SYMPTOMS = {
-            "Migraine": { min: 1, max: 2, weight: 8, color: "#8e44ad", is_period: false, modifiers: ["with aura", "severe nausea"] },
-            "Food Poisoning": { min: 1, max: 2, weight: 6, color: "#27ae60", is_period: false, modifiers: ["mild dehydration"] },
-            "Stomach Bug": { min: 1, max: 3, weight: 7, color: "#d35400", is_period: false, modifiers: ["vomiting"] },
-            "Mental Health Day": { min: 1, max: 1, weight: 4, color: "#2980b9", is_period: false, modifiers: ["burnout"] },
-            "Severe Allergies": { min: 1, max: 2, weight: 5, color: "#f39c12", is_period: false, modifiers: ["sinus pressure"] },
-            "Pink Eye": { min: 2, max: 4, weight: 3, color: "#c0392b", is_period: false, modifiers: ["highly contagious"] },
-            "Menstrual Cramps": { min: 1, max: 2, weight: 9, color: "#ff69b4", gender: "Female", is_period: true, modifiers: ["severe"] },
-            "Heavy Flow/Fatigue": { min: 1, max: 2, weight: 7, color: "#fd79a8", gender: "Female", is_period: true, modifiers: ["anemia symptoms"] },
-            "UTI": { min: 1, max: 3, weight: 4, color: "#d63031", gender: "Female", is_period: false, modifiers: ["antibiotics needed"] }
+            "Migraine": { min: 1, max: 2, weight: 8, color: "#9b59b6", is_period: false, modifiers: ["with aura", "severe nausea"] }, // Purple
+            "Food Poisoning": { min: 1, max: 2, weight: 6, color: "#2ecc71", is_period: false, modifiers: ["mild dehydration"] }, // Green
+            "Stomach Bug": { min: 1, max: 3, weight: 7, color: "#e67e22", is_period: false, modifiers: ["vomiting"] }, // Orange
+            "Mental Health Day": { min: 1, max: 1, weight: 4, color: "#3498db", is_period: false, modifiers: ["burnout"] }, // Blue
+            "Severe Allergies": { min: 1, max: 2, weight: 5, color: "#1abc9c", is_period: false, modifiers: ["sinus pressure"] }, // Teal
+            "Pink Eye": { min: 2, max: 4, weight: 3, color: "#e74c3c", is_period: false, modifiers: ["highly contagious"] }, // Red
+            "Menstrual Cramps": { min: 1, max: 2, weight: 9, color: "#ff9ff3", gender: "Female", is_period: true, modifiers: ["severe"] }, // Pink
+            "Heavy Flow/Fatigue": { min: 1, max: 2, weight: 7, color: "#feca57", gender: "Female", is_period: true, modifiers: ["anemia symptoms"] }, // Peach
+            "UTI": { min: 1, max: 3, weight: 4, color: "#5f27cd", gender: "Female", is_period: false, modifiers: ["antibiotics needed"] } // Deep Purple
         };
 
         let state = {
@@ -305,7 +313,7 @@
                     document.getElementById('schoolEnd').value = decoded.end;
                     showToast("Loaded Shared Schedule!", "success");
                 } catch(e) { showToast("Invalid share link.", "error"); }
-                window.history.replaceState({}, document.title, window.location.pathname); // clear URL
+                window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 loadState();
             }
@@ -321,7 +329,7 @@
             if(globalCountries.length === 0) populateCountries();
             if(!urlParams.has('data')) autoDetectLocation();
             
-            pushHistory(); // Initial state
+            pushHistory(); 
         };
 
         function saveState() {
@@ -340,6 +348,17 @@
             if(saved) {
                 let d = JSON.parse(saved);
                 currentGender = d.gender || "Male"; state = d.state || state;
+                
+                // MIGRATION FIX: Inject colors into old saved illnesses if they are missing
+                for (let k in state.allSym) {
+                    if(!state.allSym[k].color && DEFAULT_SYMPTOMS[k]) state.allSym[k].color = DEFAULT_SYMPTOMS[k].color;
+                    else if (!state.allSym[k].color) state.allSym[k].color = '#'+Math.floor(Math.random()*16777215).toString(16);
+                }
+                for (let k in state.actSym) {
+                    if(!state.actSym[k].color && DEFAULT_SYMPTOMS[k]) state.actSym[k].color = DEFAULT_SYMPTOMS[k].color;
+                    else if (!state.actSym[k].color) state.actSym[k].color = state.allSym[k].color || '#3498db';
+                }
+
                 if(d.start) document.getElementById('schoolStart').value = d.start;
                 if(d.end) document.getElementById('schoolEnd').value = d.end;
                 if(d.target) { document.getElementById('targetDays').value = d.target; document.getElementById('targetValText').innerText=d.target; }
@@ -429,7 +448,6 @@
                     let dStr = info.dateStr;
                     if(isWeekend(dStr)) return showToast("Cannot lock weekends.", "error");
                     
-                    // Toggle Lock -> Blacklist -> Clear
                     if(!state.lockedDates[dStr] && !state.customBlacklist.some(b=>b.start<=dStr && b.end>=dStr)) {
                         state.lockedDates[dStr] = "Locked Day"; showToast("Day Locked.");
                     } else if (state.lockedDates[dStr]) {
@@ -449,7 +467,7 @@
                     state.blocks.forEach(sb => {
                         let eD=sDate(sb.end); eD.setDate(eD.getDate()+1);
                         let title = sb.missed % 1 !== 0 ? `🌗 ${sb.reason}` : sb.reason;
-                        evs.push({ title: title, start: sb.start, end: fDate(eD), color: sb.color, textColor: '#fff' });
+                        evs.push({ title: title, start: sb.start, end: fDate(eD), color: sb.color || '#ff4b4b', textColor: '#fff' });
                     });
                     success(evs);
                 }
@@ -460,25 +478,43 @@
         // --- DASHBOARD & ANALYTICS ---
         function updateDash() {
             let st = sDate(document.getElementById('schoolStart').value); let en = sDate(document.getElementById('schoolEnd').value);
-            let totalSch = 0; let c = new Date(st);
-            let blkSet = new Set(); pubHolidays.forEach(h=>blkSet.add(h.date)); state.customBlacklist.forEach(h=>{let t=sDate(h.start); let e=sDate(h.end); while(t<=e){blkSet.add(fDate(t));t.setDate(t.getDate()+1);}});
-            while(c<=en) { if(!isWeekend(fDate(c)) && !blkSet.has(fDate(c))) totalSch++; c.setDate(c.getDate()+1); }
+            let today = new Date(); today.setHours(0,0,0,0);
             
+            let blkSet = new Set(); pubHolidays.forEach(h=>blkSet.add(h.date)); state.customBlacklist.forEach(h=>{let t=sDate(h.start); let e=sDate(h.end); while(t<=e){blkSet.add(fDate(t));t.setDate(t.getDate()+1);}});
+            
+            let daysPassed = 0; let cPass = new Date(st);
+            while(cPass <= today && cPass <= en) { if(!isWeekend(fDate(cPass)) && !blkSet.has(fDate(cPass))) daysPassed++; cPass.setDate(cPass.getDate()+1); }
+            
+            let schoolLeft = 0; let calcStart = today > st ? today : st; let cLeft = new Date(calcStart);
+            while(cLeft <= en) { if(!isWeekend(fDate(cLeft)) && !blkSet.has(fDate(cLeft))) schoolLeft++; cLeft.setDate(cLeft.getDate()+1); }
+
+            let plannedMissedLeft = 0;
+            state.blocks.forEach(sb => {
+                let bStart = sDate(sb.start); let bEnd = sDate(sb.end); let bC = new Date(bStart);
+                while(bC <= bEnd) {
+                    if (bC >= calcStart && bC <= en) {
+                        if(!isWeekend(fDate(bC)) && !blkSet.has(fDate(bC))) plannedMissedLeft++;
+                    }
+                    bC.setDate(bC.getDate() + 1);
+                }
+            });
+
             let missed = state.blocks.reduce((sum, b) => sum + b.missed, 0);
             let docs = state.blocks.filter(b => b.missed >= parseInt(document.getElementById('docNoteLimit').value)).length;
             
             // Believability Math
-            let score = 100;
-            let mFCount = 0;
+            let score = 100; let mFCount = 0;
             state.blocks.forEach(b => {
                 let d = sDate(b.start).getDay(); if(d===1 || d===5) mFCount++;
                 if(b.missed > 3) score -= 5; 
             });
-            if(state.blocks.length>0 && (mFCount/state.blocks.length) > 0.4) score -= 15; // Too many long weekends
+            if(state.blocks.length>0 && (mFCount/state.blocks.length) > 0.4) score -= 15; 
             if(docs > 2) score -= 10;
             score = Math.max(0, score);
 
-            document.getElementById('statDays').innerText = totalSch;
+            document.getElementById('statDaysPassed').innerText = daysPassed;
+            document.getElementById('statSchoolLeft').innerText = schoolLeft;
+            document.getElementById('statAttendingLeft').innerText = Math.max(0, schoolLeft - plannedMissedLeft);
             document.getElementById('statMissed').innerText = missed;
             document.getElementById('statScore').innerText = score + '%';
             document.getElementById('statDocs').innerText = docs;
@@ -541,7 +577,7 @@
         }
 
         // --- LOCATION AUTO-DETECT ---
-        const globalCountries = [{n:"Australia",c:"AU"},{n:"Canada",c:"CA"},{n:"Germany",c:"DE"},{n:"Switzerland",c:"CH"},{n:"United Kingdom",c:"GB"},{n:"United States",c:"US"}]; // Truncated for token limit, APIs handle rest
+        const globalCountries = [{n:"Australia",c:"AU"},{n:"Canada",c:"CA"},{n:"Germany",c:"DE"},{n:"Switzerland",c:"CH"},{n:"United Kingdom",c:"GB"},{n:"United States",c:"US"}]; 
         function populateCountries() { const dl = document.getElementById('countryList'); globalCountries.forEach(c => { let opt = document.createElement('option'); opt.value = c.n; dl.appendChild(opt); }); }
         
         async function autoDetectLocation() {
@@ -572,7 +608,6 @@
             const gap = parseInt(document.getElementById('minGap').value);
             const allowHalf = document.getElementById('allowHalf').value === 'yes';
             
-            // Period Logic
             const lastP = document.getElementById('lastPeriod').value ? sDate(document.getElementById('lastPeriod').value) : null;
             const cyc = parseInt(document.getElementById('cycleLength').value);
 
@@ -582,7 +617,6 @@
 
             let pool = valid.slice(); let missed = 0; let att = 0; let lastSym = "";
 
-            // Inject Locked Dates first
             for(const [dStr, reason] of Object.entries(state.lockedDates)) {
                 if(missed >= tgt) break;
                 state.blocks.push({start:dStr, end:dStr, reason:reason.replace('Locked Day','Personal'), missed:1, color:"#555"});
@@ -593,16 +627,15 @@
                 att++; 
                 let sStr = pool[Math.floor(Math.random() * pool.length)]; 
                 
-                // Weight Logic
                 let symArr = [];
                 Object.keys(state.actSym).forEach(k => {
                     let s = state.actSym[k]; if(s.gender && s.gender !== currentGender) return;
-                    if(k === lastSym) return; // Prevent back-to-back
+                    if(k === lastSym) return; 
                     
                     if(s.is_period && lastP) {
                         let daysSince = Math.abs(sDate(sStr) - lastP) / 864e5;
                         let cycleRem = daysSince % cyc;
-                        if(cycleRem > 4 && cycleRem < (cyc - 4)) return; // Only allow +/- 4 days from expected period
+                        if(cycleRem > 4 && cycleRem < (cyc - 4)) return; 
                     }
                     for(let w=0; w<s.weight; w++) symArr.push(k);
                 });
@@ -611,7 +644,6 @@
                 let cN = symArr[Math.floor(Math.random()*symArr.length)]; let cD = state.actSym[cN];
                 let dur = Math.floor(Math.random() * (cD.max - cD.min + 1)) + cD.min;
                 
-                // Half day logic
                 let isHalf = allowHalf && dur === 1 && Math.random() > 0.7;
                 
                 let toTake = [];
@@ -623,7 +655,7 @@
 
                 let bMiss = isHalf ? 0.5 : toTake.length;
                 if(missed + bMiss > tgt) { 
-                    if(isHalf) { /* fits */ }
+                    if(isHalf) {  }
                     else if(missed + 1 <= tgt) { toTake=[toTake[0]]; bMiss=1; } 
                     else continue; 
                 }
@@ -645,6 +677,25 @@
         }
 
         // --- EXPORT & SHARE ---
+        function openAppQR() {
+            let url = window.location.origin + window.location.pathname;
+            document.getElementById('qrModalTitle').innerText = "App Link";
+            document.getElementById('qrModalDesc').innerText = "Scan to open this app on another device.";
+            document.getElementById('qrcode').innerHTML = ""; 
+            new QRCode(document.getElementById("qrcode"), { text: url, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff" });
+            openModal('qrModal');
+        }
+
+        function shareDataLink() {
+            let enc = btoa(JSON.stringify({gender:currentGender, start:document.getElementById('schoolStart').value, end:document.getElementById('schoolEnd').value, state:state}));
+            let url = window.location.origin + window.location.pathname + "?data=" + enc;
+            document.getElementById('qrModalTitle').innerText = "Share Data";
+            document.getElementById('qrModalDesc').innerText = "Scan to clone your exact schedule & settings.";
+            document.getElementById('qrcode').innerHTML = ""; 
+            new QRCode(document.getElementById("qrcode"), { text: url, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff" });
+            openModal('qrModal');
+        }
+
         function exportICS() {
             if(!state.blocks.length) return showToast("No schedule to export.", "error");
             let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//SchedulerPro//EN\n";
@@ -654,14 +705,6 @@
             });
             ics += "END:VCALENDAR";
             let n = document.createElement('a'); n.href = "data:text/calendar;charset=utf8," + escape(ics); n.download = "schedule.ics"; n.click(); showToast("ICS Exported!");
-        }
-
-        function shareLink() {
-            let enc = btoa(JSON.stringify({gender:currentGender, start:document.getElementById('schoolStart').value, end:document.getElementById('schoolEnd').value, state:state}));
-            let url = window.location.origin + window.location.pathname + "?data=" + enc;
-            document.getElementById('qrcode').innerHTML = ""; 
-            new QRCode(document.getElementById("qrcode"), { text: url, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff" });
-            openModal('qrModal');
         }
 
         function generateTextReport() {
