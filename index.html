@@ -10,7 +10,354 @@
     <meta name="apple-mobile-web-app-title" content="Scheduler">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
-    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"School Excuse Scheduler","short_name":"Scheduler","display":"standalone","background_color":"#121212","theme_color":"#ff4b4b","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmNGI0YiIvPjx0ZXh0IHg9IjUwIiB5PSI2NCIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiI+4pyPPC90ZXh0Pjwvc3ZnPg==","sizes":"512x512","type":"image/svg+xml"}]}'>
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"School Excuse Scheduler","short_name":"Scheduler","display":"standalone<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Seamless School Excuse Scheduler</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <style>
+        /* Modern CSS Variables & Responsive Base */
+        :root {
+            --bg-main: #121212;
+            --bg-sidebar: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-female: #ff6b81;
+            --accent-male: #1e90ff;
+            --toast-bg: #2d2d2d;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            overflow: hidden; /* Prevent body scroll, handle scrolling in containers */
+        }
+
+        /* Safe area handling and dynamic viewport sizing */
+       .app-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            min-height: 100svh;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            box-sizing: border-box;
+        }
+
+        /* Layout Grid */
+       .sidebar {
+            background-color: var(--bg-sidebar);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+       .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #calendar {
+            flex-grow: 1;
+            min-height: 400px; /* Base minimum for mobile */
+        }
+
+        /* Form Elements */
+        label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* Toast Notification System */
+        #toast-container {
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            right: calc(20px + env(safe-area-inset-right));
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none; /* Let clicks pass through the container */
+        }
+
+       .toast {
+            position: relative;
+            background: var(--toast-bg);
+            color: white;
+            padding: 16px 45px 16px 16px;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+            min-width: 280px;
+            max-width: 90vw;
+            overflow: hidden;
+            pointer-events: auto; /* Re-enable clicks for individual toasts */
+            animation: slideIn 0.3s ease-out forwards;
+            transition: opacity 0.3s ease;
+        }
+
+       .toast.female-alert { border-left: 4px solid var(--accent-female); }
+       .toast.male-alert { border-left: 4px solid var(--accent-male); }
+       .toast.info-alert { border-left: 4px solid #4CAF50; }
+
+       .toast-message {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+       .toast-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 20px;
+            width: auto;
+            padding: 0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+       .toast-close:hover { color: white; }
+
+       .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.8);
+            width: 100%;
+            transform-origin: left;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Desktop & Landscape Media Queries */
+        @media (min-width: 768px) {
+           .app-wrapper {
+                flex-direction: row;
+            }
+           .sidebar {
+                width: 300px;
+                height: 100%;
+                border-bottom: none;
+                border-right: 1px solid #333;
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <aside class="sidebar">
+        <h2>Settings</h2>
+        
+        <div>
+            <label for="gender-toggle">Student Profile Type</label>
+            <select id="gender-toggle">
+                <option value="Male" selected>Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
+
+        <div id="female-features" style="display: none; background: #333; padding: 15px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--accent-female);">
+            <label>💅 Girlies Exclusive Settings</label>
+            <p style="font-size: 0.8rem; color: #ccc;">Cycle tracking and custom health day exemptions are now unlocked.</p>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div id="calendar"></div>
+    </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    /**
+     * Toast Notification Manager
+     * Handles 15s default timer, hover pausing, 20s reset on mouseleave, and manual dismissal.
+     */
+    class ToastManager {
+        constructor() {
+            this.container = document.getElementById('toast-container');
+        }
+
+        show(message, type = 'info-alert', initialDuration = 15000) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-message">${message}</div>
+                <button class="toast-close">&times;</button>
+                <div class="toast-progress"></div>
+            `;
+            this.container.appendChild(toast);
+
+            const progressBar = toast.querySelector('.toast-progress');
+            const closeBtn = toast.querySelector('.toast-close');
+            let timeoutId;
+            
+            // Function to trigger the CSS transition shrinking the bar to 0%
+            const startProgress = (duration) => {
+                progressBar.style.transition = 'none'; // reset transition
+                progressBar.style.width = '100%';
+                
+                // Force reflow
+                void progressBar.offsetWidth; 
+                
+                progressBar.style.transition = `width ${duration}ms linear`;
+                progressBar.style.width = '0%';
+                
+                timeoutId = setTimeout(() => {
+                    removeToast();
+                }, duration);
+            };
+
+            const removeToast = () => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    if (toast.parentElement) toast.remove();
+                }, 300); // Wait for fade out
+            };
+
+            // Start initial 15s sequence
+            startProgress(initialDuration);
+
+            // Close button listener
+            closeBtn.addEventListener('click', () => {
+                clearTimeout(timeoutId);
+                removeToast();
+            });
+
+            // Hover to pause functionality
+            toast.addEventListener('mouseenter', () => {
+                clearTimeout(timeoutId);
+                // Freeze the visual width where it currently is
+                const computedWidth = window.getComputedStyle(progressBar).width;
+                progressBar.style.transition = 'none';
+                progressBar.style.width = computedWidth;
+            });
+
+            // Reset to 20 seconds maximum after mouse leaves
+            toast.addEventListener('mouseleave', () => {
+                startProgress(20000); 
+            });
+        }
+    }
+
+    const toaster = new ToastManager();
+
+    /**
+     * Geolocation and Holiday Automation
+     */
+    async function initCalendarAndLocalization() {
+        let countryCode = 'US'; // Default fallback
+        let holidays =;
+
+        // 1. Fetch IP Geolocation
+        try {
+            // Using ipapi.co to guarantee HTTPS compatibility without API Keys
+            const ipResponse = await fetch('https://ipapi.co/json/');
+            const ipData = await ipResponse.json();
+            if (ipData.country_code) {
+                countryCode = ipData.country_code;
+                toaster.show(`Location detected as ${ipData.country_name}. Loading local holidays...`, 'info-alert', 5000);
+            }
+        } catch (error) {
+            console.warn('Geolocation failed, falling back to US', error);
+        }
+
+        // 2. Fetch Regional Holidays based on Country
+        try {
+            const currentYear = new Date().getFullYear();
+            const holidayResponse = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${currentYear}/${countryCode}`);
+            const holidayData = await holidayResponse.json();
+            
+            holidays = holidayData.map(holiday => ({
+                title: holiday.localName,
+                start: holiday.date,
+                display: 'background', // renders cleanly across the whole cell
+                color: '#3a3a3a'
+            }));
+        } catch (error) {
+            console.error('Holiday fetch failed', error);
+        }
+
+        // 3. Initialize Responsive FullCalendar
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            // Adapt layout initially based on viewport width
+            initialView: window.innerWidth < 768? 'listMonth' : 'dayGridMonth',
+            events: holidays,
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            },
+            height: '100%', 
+            // Automatically switch views on orientation change/resize
+            windowResize: function(arg) {
+                if (window.innerWidth < 768) {
+                    calendar.changeView('listMonth');
+                } else {
+                    calendar.changeView('dayGridMonth');
+                }
+            }
+        });
+        
+        calendar.render();
+    }
+
+    /**
+     * Gender Feature Toggle Logic
+     */
+    document.getElementById('gender-toggle').addEventListener('change', (e) => {
+        const femaleFeaturesUI = document.getElementById('female-features');
+        
+        if (e.target.value === 'Female') {
+            femaleFeaturesUI.style.display = 'block';
+            toaster.show('Added custom cycle tracking and specific features for the girlies! 💅', 'female-alert');
+        } else {
+            femaleFeaturesUI.style.display = 'none';
+            toaster.show('Reverted to default. Female-specific tracking features have been removed.', 'male-alert');
+        }
+    });
+
+    // Boot up the logic once DOM is fully ready
+    document.addEventListener('DOMContentLoaded', initCalendarAndLocalization);
+
+</script>
+</body>
+</html>","background_color":"#121212","theme_color":"#ff4b4b","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmNGI0YiIvPjx0ZXh0IHg9IjUwIiB5PSI2NCIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiI+4pyPPC90ZXh0Pjwvc3ZnPg==","sizes":"512x512","type":"image/svg+xml"}]}'>
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
